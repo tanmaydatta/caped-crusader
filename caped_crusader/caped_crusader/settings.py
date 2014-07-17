@@ -26,6 +26,22 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORS_ALLOW_ALL_HEADERS = True
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = (
+        'http://api.pixpa.local:8001',
+        'http://api.pixpa.com:8001',
+        'http://api.pixpa.net:8001',
+        'pixpa.local',
+        'http://pixpa.local',
+        'http://localhost:8000',
+        'http://www.pixpa.com',
+        'http://www.pixpa.net',
+        'http://api.pixpa.com',
+        'http://api.pixpa.net'
+    )
+CORS_ALLOW_METHODS = ('GET','POST','PUT','DELETE' )
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
