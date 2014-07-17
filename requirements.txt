@@ -1,0 +1,12 @@
+Django==1.6.5
+MySQL-python==1.2.4
+argparse==1.2.1
+distribute==0.6.28
+django-cors-headers==0.12
+httplib2==0.9
+git+https://github.com/pixpa/phpserialize.git
+redis==2.10.1
+requests==2.2.1
+simplejson==3.4.1
+wsgiref==0.1.2
+South==1.0
