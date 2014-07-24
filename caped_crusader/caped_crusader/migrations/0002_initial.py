@@ -18,13 +18,28 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'caped_crusader', ['user'])
 
+        # Adding model 'College'
+        db.create_table(u'caped_crusader_college', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('collegeName', self.gf('django.db.models.fields.CharField')(max_length=100)),
+        ))
+        db.send_create_signal(u'caped_crusader', ['College'])
+
 
     def backwards(self, orm):
         # Deleting model 'user'
         db.delete_table(u'caped_crusader_user')
 
+        # Deleting model 'College'
+        db.delete_table(u'caped_crusader_college')
+
 
     models = {
+        u'caped_crusader.college': {
+            'Meta': {'object_name': 'College'},
+            'collegeName': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
+        },
         u'caped_crusader.user': {
             'Email': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True'}),
             'Firstname': ('django.db.models.fields.CharField', [], {'max_length': '100'}),

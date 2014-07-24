@@ -8,31 +8,14 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'user'
-        db.create_table(u'caped_crusader_user', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('Firstname', self.gf('django.db.models.fields.CharField')(max_length=100)),
-            ('Lastname', self.gf('django.db.models.fields.CharField')(max_length=200, null=True)),
-            ('Email', self.gf('django.db.models.fields.CharField')(max_length=100, null=True)),
-            ('Password', self.gf('django.db.models.fields.CharField')(max_length=100)),
-        ))
-        db.send_create_signal(u'caped_crusader', ['user'])
 
-        # Adding model 'College'
-        db.create_table(u'caped_crusader_college', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('collegeName', self.gf('django.db.models.fields.CharField')(max_length=100)),
-        ))
-        db.send_create_signal(u'caped_crusader', ['College'])
-
+        # Changing field 'user.Email'
+        db.alter_column(u'caped_crusader_user', 'Email', self.gf('django.db.models.fields.CharField')(max_length=100, null=True))
 
     def backwards(self, orm):
-        # Deleting model 'user'
-        db.delete_table(u'caped_crusader_user')
 
-        # Deleting model 'College'
-        db.delete_table(u'caped_crusader_college')
-
+        # Changing field 'user.Email'
+        db.alter_column(u'caped_crusader_user', 'Email', self.gf('django.db.models.fields.EmailField')(max_length=75))
 
     models = {
         u'caped_crusader.college': {
