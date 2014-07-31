@@ -14,6 +14,7 @@ class College(models.Model):
 
 class Codechef(models.Model):
 	handle = models.CharField(max_length=100)
+	college = models.ForeignKey(College,null=True)
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 
