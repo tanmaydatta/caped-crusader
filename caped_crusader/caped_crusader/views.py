@@ -38,3 +38,29 @@ from django.views.decorators.http import require_POST
 
 import pdb
 import requests
+
+
+@csrf_exempt
+def addCollege(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		college = requests.POST.get('college')
+
+		try:
+			add_college = College.objects.create(collegeName=college)
+
+			if add_college:
+				response = { 'status':'success' }
+			else:
+				response = { 'status':'failed', 'error':'problem with creating client' }
+		
+		except ValidationError:	
+			response = { 'status':'failed', 'error':'invalid email'}
+
+	else:
+		response = { 'status':'failed', 'error':'post request not recieved' }
+
+	response = HttpResponse(json.dumps(response),
+		mimetype = "application/json")
+
+	return response

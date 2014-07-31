@@ -38,7 +38,10 @@ CORS_ORIGIN_WHITELIST = (
         'http://www.pixpa.com',
         'http://www.pixpa.net',
         'http://api.pixpa.com',
-        'http://api.pixpa.net'
+        'http://api.pixpa.net',
+        'localhost:8000',
+        'localhost',
+        'http://localhost'
     )
 CORS_ALLOW_METHODS = ('GET','POST','PUT','DELETE' )
 CORS_ALLOW_CREDENTIALS = True
