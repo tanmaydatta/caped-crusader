@@ -19,7 +19,6 @@ class user(models.Model):
 	Password = models.CharField(max_length=100)
 	college = models.ForeignKey(College,default=1)
 	codechef = models.CharField(max_length=100, null=True)
-	hackerrank = models.CharField(max_length=100, null=True)
 	codeforces = models.CharField(max_length=100, null=True)
 	topcoder = models.CharField(max_length=100, null=True)
 	spoj = models.CharField(max_length=100, null=True)
