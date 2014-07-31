@@ -12,6 +12,11 @@ class College(models.Model):
 	def __repr__(self):
 		return '<college: %s>' % self.collegeName
 
+class Codechef(models.Model):
+	handle = models.CharField(max_length=100)
+	def __repr__(self):
+		return '<handle: %s>' % self.handle
+
 class user(models.Model):
 	Firstname = models.CharField(max_length=100)
 	Lastname = models.CharField(max_length=200, null=True)
