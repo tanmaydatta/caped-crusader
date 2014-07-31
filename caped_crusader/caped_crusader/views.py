@@ -40,6 +40,51 @@ import pdb
 import requests
 
 
+def getDBObject(db_name):
+    db = MySQLdb.connect(settings.MYSQL_HOST,settings.MYSQL_USERNAME,settings.MYSQL_PASSWORD,db_name)
+    return db
+
+def hello(requests):
+	return HttpResponse('hello')
+
+def setCodechefDb(requests):
+	if requests.method == 'GET':
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		data = []
+		errors = []
+		try:
+			cursor.execute("SELECT * FROM detail")
+			rows = cursor.fetchall()
+			if rows:
+				for row in rows:
+					if row[11] < 167:
+						exists = Codechef.objects.filter(handle=row[0])
+						if not exists:
+							add_user = Codechef.objects.create(handle=row[0],college=College.objects.get(id=row[11]))
+							if add_user:
+								data.append({'handle' : row[0],'college_id':row[11]})
+
+			else:
+				errors.append('Error Fetching Data.')
+			db.close()
+		except MySQLdb.Error, e:
+			errors.append(str(e))
+
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': 'get request not recieved'}), mimetype="application/json")
+
+	return response
+
+
+
 @csrf_exempt
 def addCollege(requests):
 	# pdb.set_trace()

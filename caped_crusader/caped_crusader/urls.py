@@ -8,6 +8,7 @@ urlpatterns = patterns('caped_crusader.views',
     # url(r'^$', 'caped_crusader.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
 
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^hello/', 'hello'),
     url(r'^addCollege/','addCollege'),
+    url(r'^setCodechefDb/','setCodechefDb'),
 )
