@@ -18,6 +18,13 @@ class Codeforces(models.Model):
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 
+class Topcoder(models.Model):
+	handle = models.CharField(max_length=100)
+	college = models.ForeignKey(College,null=True)
+	coderId = models.CharField(max_length=100)
+	def __repr__(self):
+		return '<handle: %s>' % self.handle
+
 class Codechef(models.Model):
 	handle = models.CharField(max_length=100)
 	college = models.ForeignKey(College,null=True)

@@ -71,7 +71,7 @@ def addCfUser(requests):
 
 
 @csrf_exempt
-def setCodeforcesDb(requests):
+def updateCFUserlist(requests):
 	# pdb.set_trace()
 	if requests.method == 'POST':
 		json_data = open("/var/www/html/caped-crusader/caped_crusader/caped_crusader/user-ratedList.json")
@@ -141,7 +141,7 @@ def addCollege(requests):
 			if add_college:
 				response = { 'status':'success' }
 			else:
-				response = { 'status':'failed', 'error':'problem with creating client' }
+				response = { 'status':'failed', 'error':'problem adding college' }
 		
 		except ValidationError:	
 			response = { 'status':'failed', 'error':'invalid email'}
@@ -151,5 +151,53 @@ def addCollege(requests):
 
 	response = HttpResponse(json.dumps(response),
 		mimetype = "application/json")
+
+	return response
+
+
+@csrf_exempt
+def updateTCUserlist(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		json_data = open("/var/www/html/caped-crusader/caped_crusader/caped_crusader/topcoder.json")
+		data = json.load(json_data)
+		length = len(data['row'])
+		response = []
+		for row in data['row']:
+			try:
+				college = row['school']
+				country = row['country_name']
+				coderId = row['coder_id']
+			except:
+				college = ""
+			if college and country == 'India':
+				response.append({'handle':row['handle'],'college':college,'coderId':coderId})
+		response = HttpResponse(json.dumps({'status': 'success','details': response}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not recieved'}), mimetype="application/json")
+	return response
+
+
+
+@csrf_exempt
+def addTCUser(requests):
+	if requests.method == 'POST':
+		college = requests.POST.get('college')
+		handle = requests.POST.get('handle')
+		coderId = requests.POST.get('coderId')
+		response = []
+		exists = Topcoder.objects.filter(handle=handle)
+		if not exists:
+			add_user = Topcoder.objects.create(handle=handle,college=College.objects.get(id=college),coderId=coderId)
+			if add_user:
+				response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
+
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 
 	return response
