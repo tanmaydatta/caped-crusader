@@ -12,6 +12,12 @@ class College(models.Model):
 	def __repr__(self):
 		return '<college: %s>' % self.collegeName
 
+class Codeforces(models.Model):
+	handle = models.CharField(max_length=100)
+	college = models.ForeignKey(College,null=True)
+	def __repr__(self):
+		return '<handle: %s>' % self.handle
+
 class Codechef(models.Model):
 	handle = models.CharField(max_length=100)
 	college = models.ForeignKey(College,null=True)

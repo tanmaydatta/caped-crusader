@@ -47,6 +47,50 @@ def getDBObject(db_name):
 def hello(requests):
 	return HttpResponse('hello')
 
+@csrf_exempt
+def addCfUser(requests):
+	if requests.method == 'POST':
+		college = requests.POST.get('college')
+		handle = requests.POST.get('handle')
+		response = []
+		exists = Codeforces.objects.filter(handle=handle)
+		if not exists:
+			add_user = Codeforces.objects.create(handle=handle,college=College.objects.get(id=college))
+			if add_user:
+				response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
+
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+
+	return response
+
+
+@csrf_exempt
+def setCodeforcesDb(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		json_data = open("/var/www/html/caped-crusader/caped_crusader/caped_crusader/user-ratedList.json")
+		data = json.load(json_data)
+		length = len(data['result'])
+		response = []
+		for row in data['result']:
+			try:
+				college = row['organization']
+				country = row['country']
+			except:
+				college = ""
+			if college and country == 'India':
+				response.append({'handle':row['handle'],'college':college})
+		response = HttpResponse(json.dumps({'status': 'success','details': response}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not recieved'}), mimetype="application/json")
+	return response
+
 def setCodechefDb(requests):
 	if requests.method == 'GET':
 		db_name="okrdx"

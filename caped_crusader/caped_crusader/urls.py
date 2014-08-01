@@ -11,4 +11,6 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^hello/', 'hello'),
     url(r'^addCollege/','addCollege'),
     url(r'^setCodechefDb/','setCodechefDb'),
+    url(r'^setCodeforcesDb/','setCodeforcesDb'),
+    url(r'^addCfUser/','addCfUser'),
 )
