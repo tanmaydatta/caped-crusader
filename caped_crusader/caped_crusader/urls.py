@@ -15,4 +15,5 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^addCfUser/','addCfUser'),
     url(r'^addTCUser/','addTCUser'),
     url(r'^updateTCUserlist/','updateTCUserlist'),
+    url(r'^setId/','setId'),
 )

@@ -44,8 +44,17 @@ def getDBObject(db_name):
     db = MySQLdb.connect(settings.MYSQL_HOST,settings.MYSQL_USERNAME,settings.MYSQL_PASSWORD,db_name)
     return db
 
+def setId(requests):
+	x = requests.GET['1']
+	requests.session['id'] = x
+	return HttpResponse(x)
+
+
 def hello(requests):
-	return HttpResponse('hello')
+	x = requests.GET['1']
+	y = requests.session['id']
+	response = HttpResponse(json.dumps({'id': x,'sessid': y}), mimetype="application/json")
+	return response
 
 @csrf_exempt
 def addCfUser(requests):
