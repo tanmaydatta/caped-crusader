@@ -16,4 +16,5 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^addTCUser/','addTCUser'),
     url(r'^updateTCUserlist/','updateTCUserlist'),
     url(r'^setId/','setId'),
+    url(r'^ccRankings/(?P<contest>\w+)/(?P<get_handle>\w+)', 'get_cc_rank'),
 )

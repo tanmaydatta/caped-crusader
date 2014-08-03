@@ -13,6 +13,8 @@ import urllib
 import HTMLParser
 import pprint
 import random
+import requests
+from bs4 import BeautifulSoup as bs
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
 from django.http import * #(HttpResponse, HttpResponseRedirect)
@@ -209,4 +211,33 @@ def addTCUser(requests):
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 
+	return response
+
+
+def get_cc_rank(request,contest,get_handle):
+	# pdb.set_trace()
+	cc = "http://www.codechef.com/rankings/"+contest
+	page = requests.get(cc)
+
+	page = page.text
+	x = page.find("<table>")
+	y = page.find("</table>",x)
+	table = page[x:y]
+	table = bs(table)
+	trs = table.find_all("tr")
+	flag = 0
+	for tr in trs:
+		tds = tr.find_all("td")
+		if tds:
+			handle = tds[1].find("a").text
+			if handle == get_handle:
+				flag = 1
+				rank = tds[0].find(text=True)
+				break;
+
+	if flag == 1:
+		response = HttpResponse(json.dumps({'status': 'success','handle': get_handle,'rank':rank}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'handle not found'}), mimetype="application/json")
 	return response
