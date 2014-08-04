@@ -14,6 +14,7 @@ import HTMLParser
 import pprint
 import random
 import requests
+import time
 from bs4 import BeautifulSoup as bs
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
@@ -41,6 +42,13 @@ from django.views.decorators.http import require_POST
 import pdb
 import requests
 
+t = 0
+
+def del_Id(requests):
+	del requests.session['id']
+	# print "true"
+	response = HttpResponse(json.dumps({'status': 'done',}), mimetype="application/json")
+	return response
 
 def getDBObject(db_name):
     db = MySQLdb.connect(settings.MYSQL_HOST,settings.MYSQL_USERNAME,settings.MYSQL_PASSWORD,db_name)
@@ -50,7 +58,6 @@ def setId(requests):
 	x = requests.GET['1']
 	requests.session['id'] = x
 	return HttpResponse(x)
-
 
 def hello(requests):
 	x = requests.GET['1']
@@ -289,40 +296,58 @@ def fillCCTable(request,contest):
 
 	return response
 
-def updateCCRank(request,contest):
-	cc = "http://www.codechef.com/rankings/"+contest
-	page = requests.get(cc)
-	db_name="okrdx"
-	db = getDBObject(db_name)
-	cursor = db.cursor()
-	errors = []
-	page = page.text
-	x = page.find("<table>")
-	y = page.find("</table>",x)
-	table = page[x:y]
-	table = bs(table)
-	trs = table.find_all("tr")
+def updateCCRank(request,contest,run):
+	# pdb.set_trace()
 	try:
-		for tr in trs:
-			tds = tr.find_all("td")
-			if tds:
-				handle = tds[1].find("a").text
-				score = tds[len(tds)-1].text
-				sql = "SELECT * FROM "+contest+" WHERE handle = '{0}'".format(handle)
-				cursor.execute(sql)
-				row = cursor.fetchall()
-				if row:
-					sql = "UPDATE "+contest+" SET score = '{0}' WHERE handle = '{1}'".format(score,handle)
-					cursor.execute(sql)
-		db.commit()
+		global t 
+		t = int (0)
+		while True:
+			if t >= int(run):
+				response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+				break
+			print t
+			print run
+			ts = time.time()
+			cc = "http://www.codechef.com/rankings/"+contest
+			page = requests.get(cc)
+			db_name="okrdx"
+			db = getDBObject(db_name)
+			cursor = db.cursor()
+			errors = []
+			page = page.text
+			x = page.find("<table>")
+			y = page.find("</table>",x)
+			table = page[x:y]
+			table = bs(table)
+			trs = table.find_all("tr")
+			try:
+				for tr in trs:
+					tds = tr.find_all("td")
+					if tds:
+						handle = tds[1].find("a").text
+						score = tds[len(tds)-1].text
+						sql = "SELECT * FROM "+contest+" WHERE handle = '{0}'".format(handle)
+						cursor.execute(sql)
+						row = cursor.fetchall()
+						if row:
+							sql = "UPDATE "+contest+" SET score = '{0}' WHERE handle = '{1}'".format(score,handle)
+							cursor.execute(sql)
+				db.commit()
+				te = time.time()
+				t = t + int(te - ts)
+				print t
 
-	except MySQLdb.Error, e:
-		errors.append(str(e))
+			except MySQLdb.Error, e:
+				errors.append(str(e))
 
-	if not errors:
-		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+			if not errors:
+				response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
 
-	else:
-		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+			print "one iteration complete"
+
+	except:
+		response = HttpResponse(json.dumps({'status': 'session id deleted'}), mimetype="application/json")
 
 	return response
