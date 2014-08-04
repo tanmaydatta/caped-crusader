@@ -139,28 +139,6 @@ def setCodechefDb(requests):
 	return response
 
 
-def ccTable(request,contest):
-	db_name="okrdx"
-	db = getDBObject(db_name)
-	cursor = db.cursor()
-	errors = []
-	url = "http://www.codechef.com/rankings/"+contest
-	try:
-		sql = "CREATE TABLE " + contest + " (handle varchar(100) NOT NULL,score DOUBLE, college_id INT)"
-		cursor.execute(sql)
-		db.close()
-	except MySQLdb.Error, e:
-		errors.append(str(e))
-
-	if not errors:
-		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
-
-	else:
-		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
-
-	return response
-
-
 @csrf_exempt
 def addCollege(requests):
 	# pdb.set_trace()
@@ -261,4 +239,90 @@ def get_cc_rank(request,contest,get_handle):
 
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'handle not found'}), mimetype="application/json")
+	return response
+
+
+def ccTable(request,contest):
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	errors = []
+	url = "http://www.codechef.com/rankings/"+contest
+	try:
+		sql = "CREATE TABLE " + contest + " (handle varchar(100) NOT NULL,score DOUBLE, college_id INT)"
+		cursor.execute(sql)
+		db.close()
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
+
+def fillCCTable(request,contest):
+	# pdb.set_trace()
+	allUsers = Codechef.objects.all()
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	errors = []
+	try:
+		for user in allUsers:
+			sql = "INSERT INTO "+contest+" (handle, college_id ) VALUES (%s,%s)" 
+			# print sql
+			cursor.execute(sql,( user.handle, user.college.id ))
+		db.commit()
+
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
+def updateCCRank(request,contest):
+	cc = "http://www.codechef.com/rankings/"+contest
+	page = requests.get(cc)
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	errors = []
+	page = page.text
+	x = page.find("<table>")
+	y = page.find("</table>",x)
+	table = page[x:y]
+	table = bs(table)
+	trs = table.find_all("tr")
+	try:
+		for tr in trs:
+			tds = tr.find_all("td")
+			if tds:
+				handle = tds[1].find("a").text
+				score = tds[len(tds)-1].text
+				sql = "SELECT * FROM "+contest+" WHERE handle = '{0}'".format(handle)
+				cursor.execute(sql)
+				row = cursor.fetchall()
+				if row:
+					sql = "UPDATE "+contest+" SET score = '{0}' WHERE handle = '{1}'".format(score,handle)
+					cursor.execute(sql)
+		db.commit()
+
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
 	return response
