@@ -139,6 +139,27 @@ def setCodechefDb(requests):
 	return response
 
 
+def ccTable(request,contest):
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	errors = []
+	url = "http://www.codechef.com/rankings/"+contest
+	try:
+		sql = "CREATE TABLE " + contest + " (handle varchar(100) NOT NULL,score DOUBLE, college_id INT)"
+		cursor.execute(sql)
+		db.close()
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
 
 @csrf_exempt
 def addCollege(requests):
