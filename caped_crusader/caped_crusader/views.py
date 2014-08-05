@@ -60,7 +60,7 @@ def setId(requests):
 	return HttpResponse(x)
 
 def hello(requests):
-	x = requests.GET['1']
+	# x = requests.GET['1']
 	y = requests.session['id']
 	response = HttpResponse(json.dumps({'id': x,'sessid': y}), mimetype="application/json")
 	return response
@@ -301,12 +301,13 @@ def updateCCRank(request,contest,run):
 	try:
 		global t 
 		t = int (0)
+		i = 0
 		while True:
 			if t >= int(run):
-				response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+				response = HttpResponse(json.dumps({'status': 'success','iterations':i}), mimetype="application/json")
 				break
-			print t
-			print run
+			# print t
+			# print run
 			ts = time.time()
 			cc = "http://www.codechef.com/rankings/"+contest
 			page = requests.get(cc)
@@ -335,17 +336,18 @@ def updateCCRank(request,contest,run):
 				db.commit()
 				te = time.time()
 				t = t + int(te - ts)
-				print t
+				# print t
 
 			except MySQLdb.Error, e:
 				errors.append(str(e))
 
 			if not errors:
-				response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+				response = HttpResponse(json.dumps({'status': 'success','iterations':i+1}), mimetype="application/json")
 
 			else:
 				response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
-			print "one iteration complete"
+			# print i+1," iteration(s) complete"
+			i = i +1
 
 	except:
 		response = HttpResponse(json.dumps({'status': 'session id deleted'}), mimetype="application/json")
