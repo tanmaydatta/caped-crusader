@@ -256,25 +256,88 @@ def updateTCUserlist(requests):
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not recieved'}), mimetype="application/json")
 	return response
 
+def getTCCollege(handle,college_id):
+	cc = "http://api.topcoder.com/v2/users/search?handle="+str(handle)+"&caseSensitive=true"
+	# print cc
+	page = requests.get(cc)
+	page = page.text
+	page=json.loads(page)
+	if page['users']:
+		userid = str(page['users'][0]['userId'])
+		cc = "http://community.topcoder.com/tc?module=MemberProfile&cr="+userid
+		page = requests.get(cc)
+		page = page.text
+		page = bs(page)
+		tables = page.find_all('table', {'class': 'profileTable'})
+		tds = tables[0].find_all('td')
+		ul = tds[len(tds)-1]
+		lis = ul.find_all('li')
+		college = lis[2].find_all('span')[0].text
+		tags = []
+		errors = []
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		# print college
+		try:
+			sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
+			cursor.execute(sql)
+			rows = cursor.fetchall()
+			if rows:
+				for row in rows:
+					x = row[1]
+					x = [x.strip() for x in x.split(',')]
+					tags = x;
+					break
+			else:
+				errors.append('Error Fetching Data.')
+			db.close()
+		except MySQLdb.Error, e:
+			errors.append(str(e))
 
+		if not errors:
+			flag = 0
+			for tag in tags:
+				temp = college.find(tag)
+				if temp > -1:
+					flag = 1
+					break
+
+			if flag == 1:
+				response = json.dumps({'status': 'success','userid':userid})
+
+			else:
+				response = json.dumps({'status': 'failure','errors':'college did not match'})
+
+		else:
+			response = json.dumps({'status': 'failure','errors':errors})
+	else:
+		response = json.dumps({'status': 'failure','errors':'incorrect handle'})
+	return response
 
 @csrf_exempt
 def addTCUser(requests):
 	if requests.method == 'POST':
 		college = requests.POST.get('college')
 		handle = requests.POST.get('handle')
-		coderId = requests.POST.get('coderId')
-		response = []
-		exists = Topcoder.objects.filter(handle=handle)
-		if not exists:
-			add_user = Topcoder.objects.create(handle=handle,college=College.objects.get(id=college),coderId=coderId)
-			if add_user:
-				response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
-			else:
-				response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
+		college = getCFCollege(handle,college)
+		college1 = json.loads(college)
+		if college1['status'] == 'success':
+			coderId = college1('userid')
+			college = requests.POST.get('college')
+			response = []
+			exists = Topcoder.objects.filter(handle=handle)
+			if not exists:
+				add_user = Topcoder.objects.create(handle=handle,college=College.objects.get(id=college),coderId=coderId)
+				if add_user:
+					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+				else:
+					response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
 
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
 		else:
-			response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
+			response = HttpResponse(college, mimetype="application/json")
 
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
