@@ -65,22 +65,80 @@ def hello(requests):
 	response = HttpResponse(json.dumps({'id': x,'sessid': y}), mimetype="application/json")
 	return response
 
+def getCFCollege(handle,college_id):
+	cc = "http://codeforces.com/api/user.info?handles="+str(handle)
+	# print cc
+	page = urllib2.urlopen(cc).read()
+	page = json.loads(page)
+	tags = []
+	errors = []
+	if page['status'] == 'OK':
+		college = page['result'][0]['organization']
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		# print college
+		try:
+			sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
+			cursor.execute(sql)
+			rows = cursor.fetchall()
+			if rows:
+				for row in rows:
+					x = row[1]
+					x = [x.strip() for x in x.split(',')]
+					tags = x;
+					break
+			else:
+				errors.append('Error Fetching Data.')
+			db.close()
+		except MySQLdb.Error, e:
+			errors.append(str(e))
+
+		if not errors:
+			flag = 0
+			for tag in tags:
+				temp = college.find(tag)
+				if temp > -1:
+					flag = 1
+					break
+
+			if flag == 1:
+				response = json.dumps({'status': 'success'})
+
+			else:
+				response = json.dumps({'status': 'failure','errors':'college did not match'})
+
+		else:
+			response = json.dumps({'status': 'failure','errors':errors})
+
+	else:
+		response = json.dumps({'status': 'failure','errors':'incorrect handle'})
+
+	return response
+
+
 @csrf_exempt
 def addCfUser(requests):
 	if requests.method == 'POST':
 		college = requests.POST.get('college')
 		handle = requests.POST.get('handle')
+		college = getCFCollege(handle,college)
+		college1 = json.loads(college)
 		response = []
-		exists = Codeforces.objects.filter(handle=handle)
-		if not exists:
-			add_user = Codeforces.objects.create(handle=handle,college=College.objects.get(id=college))
-			if add_user:
-				response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
-			else:
-				response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
+		if college1['status'] == 'success':
+			college = requests.POST.get('college')
+			exists = Codeforces.objects.filter(handle=handle)
+			if not exists:
+				add_user = Codeforces.objects.create(handle=handle,college=College.objects.get(id=college))
+				if add_user:
+					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+				else:
+					response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
 
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
 		else:
-			response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
+			response = HttpResponse(college, mimetype="application/json")
 
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
@@ -393,48 +451,51 @@ def getCCCollege(handle,college_id):
 	page = page.text
 	page = bs(page)
 	x = page.find_all('table', {'cellpadding': '0','cellspacing':'0','border':'0'})
-	table = x[1]
-	trs = table.find_all("tr")
-	tds = trs[9].find_all("td")
-	college = tds[1].text
-	tags = []
-	errors = []
-	db_name="okrdx"
-	db = getDBObject(db_name)
-	cursor = db.cursor()
-	# print college
-	try:
-		sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
-		cursor.execute(sql)
-		rows = cursor.fetchall()
-		if rows:
-			for row in rows:
-				x = row[1]
-				x = [x.strip() for x in x.split(',')]
-				tags = x;
-				break
-		else:
-			errors.append('Error Fetching Data.')
-		db.close()
-	except MySQLdb.Error, e:
-		errors.append(str(e))
-
-	if not errors:
-		flag = 0
-		for tag in tags:
-			temp = college.find(tag)
-			if temp > -1:
-				flag = 1
-				break
-
-		if flag == 1:
-			response = json.dumps({'status': 'success'})
-
-		else:
-			response = json.dumps({'status': 'failure','errors':'college did not match'})
-
+	if not x:
+		response = json.dumps({'status': 'failure','errors':'incorrect handle'})
 	else:
-		response = json.dumps({'status': 'failure','errors':errors})
+		table = x[1]
+		trs = table.find_all("tr")
+		tds = trs[9].find_all("td")
+		college = tds[1].text
+		tags = []
+		errors = []
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		# print college
+		try:
+			sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
+			cursor.execute(sql)
+			rows = cursor.fetchall()
+			if rows:
+				for row in rows:
+					x = row[1]
+					x = [x.strip() for x in x.split(',')]
+					tags = x;
+					break
+			else:
+				errors.append('Error Fetching Data.')
+			db.close()
+		except MySQLdb.Error, e:
+			errors.append(str(e))
+
+		if not errors:
+			flag = 0
+			for tag in tags:
+				temp = college.find(tag)
+				if temp > -1:
+					flag = 1
+					break
+
+			if flag == 1:
+				response = json.dumps({'status': 'success'})
+
+			else:
+				response = json.dumps({'status': 'failure','errors':'college did not match'})
+
+		else:
+			response = json.dumps({'status': 'failure','errors':errors})
 
 	return response
 
@@ -464,3 +525,5 @@ def addCCUser(requests):
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 
 	return response
+
+
