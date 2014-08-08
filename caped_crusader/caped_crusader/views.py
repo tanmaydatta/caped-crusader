@@ -153,15 +153,19 @@ def addCollege(requests):
 		college = requests.POST.get('college')
 
 		try:
-			add_college = College.objects.create(collegeName=college)
+			exist = College.objects.filter(collegeName=college)
+			if not exist:
+				add_college = College.objects.create(collegeName=college)
 
-			if add_college:
-				response = { 'status':'success' }
+				if add_college:
+					response = { 'status':'success' }
+				else:
+					response = { 'status':'failed', 'error':'problem adding college' }
 			else:
-				response = { 'status':'failed', 'error':'problem adding college' }
+				response = { 'status':'failed', 'error':'already exists in database'}
 		
 		except ValidationError:	
-			response = { 'status':'failed', 'error':'invalid email'}
+			response = { 'status':'failed', 'error':'error in database'}
 
 	else:
 		response = { 'status':'failed', 'error':'post request not recieved' }
@@ -351,5 +355,112 @@ def updateCCRank(request,contest,run):
 
 	except:
 		response = HttpResponse(json.dumps({'status': 'session id deleted'}), mimetype="application/json")
+
+	return response
+
+def collegeTags():
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	tags = []
+	errors = []
+	try:
+		cursor.execute("SELECT * FROM collegeTags")
+		rows = cursor.fetchall()
+		if rows:
+			for row in rows:
+				if row[0] < 167:
+					x = row[1]
+					x = [x.strip() for x in x.split(',')]
+					tags.append(x)
+
+		else:
+			errors.append('Error Fetching Data.')
+		db.close()
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = tags
+	else:
+		response = ""
+	return response
+
+def getCCCollege(handle,college_id):
+	cc = "http://www.codechef.com/users/"+str(handle)
+	# print cc
+	page = requests.get(cc)
+	page = page.text
+	page = bs(page)
+	x = page.find_all('table', {'cellpadding': '0','cellspacing':'0','border':'0'})
+	table = x[1]
+	trs = table.find_all("tr")
+	tds = trs[9].find_all("td")
+	college = tds[1].text
+	tags = []
+	errors = []
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	# print college
+	try:
+		sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
+		cursor.execute(sql)
+		rows = cursor.fetchall()
+		if rows:
+			for row in rows:
+				x = row[1]
+				x = [x.strip() for x in x.split(',')]
+				tags = x;
+				break
+		else:
+			errors.append('Error Fetching Data.')
+		db.close()
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		flag = 0
+		for tag in tags:
+			temp = college.find(tag)
+			if temp > -1:
+				flag = 1
+				break
+
+		if flag == 1:
+			response = json.dumps({'status': 'success'})
+
+		else:
+			response = json.dumps({'status': 'failure','errors':'college did not match'})
+
+	else:
+		response = json.dumps({'status': 'failure','errors':errors})
+
+	return response
+
+def addCCUser(requests):
+	if requests.method == 'POST':
+		handle = requests.POST.get('handle')
+		college = requests.POST.get('college')
+		college = getCCCollege(handle,college)
+		college1 = json.loads(college)
+		if college1['status'] == 'success':
+			college = requests.POST.get('college')
+			response = []
+			exists = Codechef.objects.filter(handle=handle)
+			if not exists:
+				add_user = Codechef.objects.create(handle=handle,college=College.objects.get(id=college))
+				if add_user:
+					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+				else:
+					response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
+
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','details': 'user already exists'}), mimetype="application/json")
+		else:
+			response = HttpResponse(college, mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 
 	return response
