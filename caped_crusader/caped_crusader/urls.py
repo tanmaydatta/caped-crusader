@@ -22,4 +22,12 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^fillCCTable/(?P<contest>\w+)', 'fillCCTable'),
     url(r'^updateCCRank/(?P<contest>\w+)/(?P<run>\d+)', 'updateCCRank'),
     url(r'^addCCUser/', 'addCCUser'),
+    url(r'^testCCauth/', 'testCCauth'),
+    url(r'^updateCCNames/', 'updateCCNames'),
+    url(r'^syncCCCollege/', 'syncCCCollege'),
+    url(r'^updateSyncCFNames/', 'updateSyncCFNames'),
+    url(r'^SyncTCColleges/', 'SyncTCColleges'),
+    url(r'^updateCCRank/', 'updateCCRank'),
+    url(r'^cfTable/(?P<contest>\w+)', 'cfTable'),
 )
+

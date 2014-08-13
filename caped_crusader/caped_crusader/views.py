@@ -44,6 +44,13 @@ import requests
 
 t = 0
 
+def testCCauth(requests):
+	cc = "http://www.codechef.com/contests"
+	page = urllib2.urlopen(cc)
+	page = bs(page)
+	x = page.find_all('div', {'id': 'custom-login'})
+	return HttpResponse(x)
+
 def del_Id(requests):
 	del requests.session['id']
 	# print "true"
@@ -61,8 +68,11 @@ def setId(requests):
 
 def hello(requests):
 	# x = requests.GET['1']
-	y = requests.session['id']
-	response = HttpResponse(json.dumps({'id': x,'sessid': y}), mimetype="application/json")
+	try:
+		y = requests.session['id']
+		response = HttpResponse(json.dumps({'sessid': y}), mimetype="application/json")
+	except:
+		response = HttpResponse(json.dumps({'sessid': 'null'}), mimetype="application/json")
 	return response
 
 def getCFCollege(handle,college_id):
@@ -174,17 +184,19 @@ def setCodechefDb(requests):
 		cursor = db.cursor()
 		data = []
 		errors = []
+		i=0
 		try:
 			cursor.execute("SELECT * FROM detail")
 			rows = cursor.fetchall()
 			if rows:
 				for row in rows:
-					if row[11] < 167:
+					if row[11] == 3:
 						exists = Codechef.objects.filter(handle=row[0])
 						if not exists:
 							add_user = Codechef.objects.create(handle=row[0],college=College.objects.get(id=row[11]))
 							if add_user:
 								data.append({'handle' : row[0],'college_id':row[11]})
+								i = i+1
 
 			else:
 				errors.append('Error Fetching Data.')
@@ -193,7 +205,7 @@ def setCodechefDb(requests):
 			errors.append(str(e))
 
 		if not errors:
-			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+			response = HttpResponse(json.dumps({'status': 'success','details': data,'count':i}), mimetype="application/json")
 
 		else:
 			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
@@ -232,6 +244,7 @@ def addCollege(requests):
 		mimetype = "application/json")
 
 	return response
+
 
 
 @csrf_exempt
@@ -320,7 +333,7 @@ def addTCUser(requests):
 	if requests.method == 'POST':
 		college = requests.POST.get('college')
 		handle = requests.POST.get('handle')
-		college = getCFCollege(handle,college)
+		college = getTCCollege(handle,college)
 		college1 = json.loads(college)
 		if college1['status'] == 'success':
 			coderId = college1('userid')
@@ -381,7 +394,7 @@ def ccTable(request,contest):
 	errors = []
 	url = "http://www.codechef.com/rankings/"+contest
 	try:
-		sql = "CREATE TABLE " + contest + " (handle varchar(100) NOT NULL,score DOUBLE, college_id INT)"
+		sql = "CREATE TABLE " + contest + " (handle varchar(100) NOT NULL UNIQUE,score DOUBLE, college_id INT)"
 		cursor.execute(sql)
 		db.close()
 	except MySQLdb.Error, e:
@@ -507,6 +520,67 @@ def collegeTags():
 		response = ""
 	return response
 
+def syncCCCollege(request):
+	pdb.set_trace()
+	allObjects = Codechef.objects.all()
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	sql = "SELECT * FROM collegeTags"
+	cursor.execute(sql)
+	rows = cursor.fetchall()
+	for row in allObjects:
+		if row.college.id != 28 and row.college.id !=166 and row.college.id !=4 and row.college.id !=5 and row.college.id !=15 and row.college.id !=23 and row.college.id !=24 and row.college.id !=57 and row.college.id !=78 and row.college.id !=90 and row.college.id !=93 and row.college.id !=102:
+			print row.handle
+			cc = "http://www.codechef.com/users/"+str(row.handle)		
+			page = requests.get(cc)
+			page = page.text
+			page = bs(page)
+			x = page.find_all('table', {'cellpadding': '0','cellspacing':'0','border':'0'})
+			table = x[1]
+			trs = table.find_all("tr")
+			tds = trs[9].find_all("td")
+			try:
+				college = tds[1].text
+				college = college.replace(',','')
+				college = college.replace('  ',' ')
+				college = college.lower()
+				tds = trs[8].find_all("td")
+				student = tds[1].text
+				tds = trs[1].find_all("td")
+				name = tds[1].text
+				print college 
+			except:
+				college = ""
+			if college and student == "Student":
+				for row1 in rows:
+					flag = 0
+					x = row1[1]
+					x = [x for x in x.split(',')]
+					for tag in x:
+						temp = college.find(tag.lower())
+						if temp > -1:
+							print tag + " hello"
+							flag = 1
+							cid = row1[0]
+							row.college = College.objects.get(id=cid)
+							row.name = name
+							row.save()
+							break
+					if flag == 1:
+						break
+				if flag == 0:
+					row.name = "none"
+					row.save()
+				print row.id
+			else:
+				row.name = "none1"
+				row.save()
+			print row.handle
+	return HttpResponse(True)
+
+
+
 def getCCCollege(handle,college_id):
 	cc = "http://www.codechef.com/users/"+str(handle)
 	# print cc
@@ -521,6 +595,8 @@ def getCCCollege(handle,college_id):
 		trs = table.find_all("tr")
 		tds = trs[9].find_all("td")
 		college = tds[1].text
+		tds = trs[1].find_all("td")
+		name = tds[1].text
 		tags = []
 		errors = []
 		db_name="okrdx"
@@ -552,7 +628,7 @@ def getCCCollege(handle,college_id):
 					break
 
 			if flag == 1:
-				response = json.dumps({'status': 'success'})
+				response = json.dumps({'status': 'success','name':name})
 
 			else:
 				response = json.dumps({'status': 'failure','errors':'college did not match'})
@@ -569,11 +645,12 @@ def addCCUser(requests):
 		college = getCCCollege(handle,college)
 		college1 = json.loads(college)
 		if college1['status'] == 'success':
+			name = college['name']
 			college = requests.POST.get('college')
 			response = []
 			exists = Codechef.objects.filter(handle=handle)
 			if not exists:
-				add_user = Codechef.objects.create(handle=handle,college=College.objects.get(id=college))
+				add_user = Codechef.objects.create(handle=handle,college=College.objects.get(id=college),name=name)
 				if add_user:
 					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
 				else:
@@ -589,4 +666,233 @@ def addCCUser(requests):
 
 	return response
 
+def updateCCNames(request):
+	pdb.set_trace()
+	try:
+		i = 0
+		allObjects = Codechef.objects.all()
+		for row in allObjects:
+			if not row.name:
+				cc = "http://www.codechef.com/users/"+str(row.handle)		
+				page = requests.get(cc)
+				page = page.text
+				page = bs(page)
+				x = page.find_all('table', {'cellpadding': '0','cellspacing':'0','border':'0'})
+				table = x[1]
+				trs = table.find_all("tr")
+				tds = trs[1].find_all("td")
+				name = tds[1].text
+				row.name = name
+				row.save()
+				print row.name
+			print i+1
+			i = i+1
+		response = json.dumps({'status': 'success'})
+	except:
+		response = json.dumps({'status': 'failure'})
+	return response
 
+def SyncTCColleges(request):
+	pdb.set_trace()
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	sql = "SELECT * FROM collegeTags"
+	cursor.execute(sql)
+	rows = cursor.fetchall()
+	i = 0
+	try:
+		allObjects = Topcoder.objects.all()
+		for row in allObjects:
+			if row.college.id == 5:
+				print row.handle
+				cc = "http://community.topcoder.com/tc?module=MemberProfile&cr="+str(row.coderId)
+				page = requests.get(cc)
+				page = page.text
+				page = bs(page)
+				tables = page.find_all('table', {'class': 'profileTable'})
+				tds = tables[0].find_all('td')
+				ul = tds[len(tds)-1]
+				lis = ul.find_all('li')
+				try:
+					college = lis[2].find_all('span')[0].text
+					college = college.lower()
+					school = lis[2].find_all('strong')[0].text
+					print college 
+				except:
+					college = ""
+				if college and school == 'School':
+					flag = 0
+					for row1 in rows:
+						flag = 0
+						x = row1[1]
+						x = [x for x in x.split(',')]
+						for tag in x:
+							temp = college.find(tag.lower())
+							if temp > -1:
+								print tag + " hello"
+								flag = 1
+								cid = row1[0]
+								row.college = College.objects.get(id=cid)
+								row.save()
+								break
+						if flag == 1:
+							break
+					if flag == 0:
+						row.delete()
+				else:
+					row.delete()
+				print row.id
+				response = json.dumps({'status': 'success'})
+	except:
+		response = json.dumps({'status': 'failure'})
+	return HttpResponse(response)
+
+
+def updateSyncCFNames(request):
+	pdb.set_trace()
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	sql = "SELECT * FROM collegeTags"
+	cursor.execute(sql)
+	rows = cursor.fetchall()
+	try:
+		i = 0
+		allObjects = Codeforces.objects.all()
+		for row in allObjects:
+			# if not row.name:
+			print row.handle
+			cc = "http://codeforces.com/api/user.info?handles="+str(row.handle)		
+			page = urllib2.urlopen(cc).read()
+			page = json.loads(page)
+			try:
+				college = page['result'][0]['organization']
+				college = college.replace(',','')
+				college = college.replace('  ',' ')
+				college = college.lower()
+				print college
+			except:
+				college = ""
+			try:
+				fname = page['result'][0]['firstName']
+			except:
+				fname = ""
+			try:
+				lname = page['result'][0]['lastName']
+			except:
+				lname = ""
+			name = fname + " " + lname
+			row.name = name
+			row.save()
+			# print row.name
+			if college:
+				for row1 in rows:
+					flag = 0
+					x = row1[1]
+					x = [x.strip() for x in x.split(',')]
+					for tag in x:
+						temp = college.find(tag.lower())
+						if temp > -1:
+							print tag
+							flag = 1
+							cid = row1[0]
+							row.college = College.objects.get(id=cid)
+							row.save()
+							break
+					if flag == 1:
+						break
+			print row.id
+		response = json.dumps({'status': 'success'})
+	except:
+		response = json.dumps({'status': 'failure'})
+	return HttpResponse(response)
+
+
+
+def updateCCRank(request):
+	pdb.set_trace()
+	try:
+		errors = []
+		users = Codechef.objects.all()
+		try:
+			for user in users:
+				if user.id > 2366:
+					# pdb.set_trace()
+					print user.handle
+					cc = "http://www.codechef.com/users/"+str(user.handle)
+					page = urllib2.urlopen(cc).read()
+					page = bs(page)
+					tables = page.find_all("table",{'class':'rating-table'})
+					trs = tables[0].find_all("tr")
+					tds = trs[1].find_all("td")
+					Long = tds[1].find_all("hx")
+					glrank = Long[0].text
+					if glrank.replace('.','',1).isdigit():
+						user.globalLRank = int(glrank)
+						clrank = Long[1].text
+						lrating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
+						if clrank.replace('.','',1).isdigit():
+							user.countryLRank = int(clrank)
+						user.lRating = float(lrating)
+					tds = trs[2].find_all("td")
+					Short = tds[1].find_all("hx")
+					gsrank = Short[0].text
+					if gsrank.replace('.','',1).isdigit():
+						user.globalSRank = int(gsrank)
+						csrank = Short[1].text
+						srating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
+						user.sRating = float(srating)
+						if csrank.replace('.','',1).isdigit():
+							user.countrySRank = int(csrank)
+
+					tds = trs[3].find_all("td")
+					Lunch = tds[1].find_all("hx")
+					gltrank = Lunch[0].text
+					if gltrank.replace('.','',1).isdigit():
+						user.globalLTRank = int(gltrank)
+						try:
+							cltrank = Lunch[1].text
+						except:
+							cltrank = ""
+						ltrating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
+						if cltrank.replace('.','',1).isdigit():
+							user.countryLTRank = int(cltrank)
+						user.ltRating = float(ltrating)
+					user.save()
+					print user.id
+					# break
+		except:
+			errors.append("error in updating data "+user.id)
+
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+		# print i+1," iteration(s) complete"
+
+	except:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
+def cfTable(request,contest):
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	errors = []
+	try:
+		sql = "CREATE TABLE CF" + contest + " (handle varchar(100) NOT NULL UNIQUE,points DOUBLE, college_id INT, rank INT)"
+		cursor.execute(sql)
+		db.close()
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response

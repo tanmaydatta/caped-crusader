@@ -15,6 +15,7 @@ class College(models.Model):
 class Codeforces(models.Model):
 	handle = models.CharField(max_length=100)
 	college = models.ForeignKey(College,null=True)
+	name = models.CharField(max_length=200,null=True)
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 
@@ -28,6 +29,17 @@ class Topcoder(models.Model):
 class Codechef(models.Model):
 	handle = models.CharField(max_length=100)
 	college = models.ForeignKey(College,null=True)
+	name = models.CharField(max_length=200,null=True)
+	countryLRank = models.IntegerField(default=-1)
+	globalLRank = models.IntegerField(default=-1)
+	countrySRank = models.IntegerField(default=-1)
+	globalSRank = models.IntegerField(default=-1)
+	countryLTRank = models.IntegerField(default=-1)
+	globalLTRank = models.IntegerField(default=-1)
+	lRating = models.FloatField(default=-1.0)
+	sRating = models.FloatField(default=-1.0)
+	ltRating = models.FloatField(default=-1.0)
+
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 
