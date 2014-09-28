@@ -61,13 +61,16 @@ def getDBObject(db_name):
     db = MySQLdb.connect(settings.MYSQL_HOST,settings.MYSQL_USERNAME,settings.MYSQL_PASSWORD,db_name)
     return db
 
+@csrf_exempt
 def setId(requests):
+	pdb.set_trace()
 	x = requests.GET['1']
 	requests.session['id'] = x
-	return HttpResponse(x)
+	return HttpResponse(json.dumps({'sessid': x}), mimetype="application/json")
 
+@csrf_exempt
 def hello(requests):
-	# x = requests.GET['1']
+	# pdb.set_trace()
 	try:
 		y = requests.session['id']
 		response = HttpResponse(json.dumps({'sessid': y}), mimetype="application/json")
