@@ -83,43 +83,49 @@ def getCFCollege(handle,college_id):
 	tags = []
 	errors = []
 	if page['status'] == 'OK':
-		college = page['result'][0]['organization']
-		db_name="okrdx"
-		db = getDBObject(db_name)
-		cursor = db.cursor()
-		# print college
 		try:
-			sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
-			cursor.execute(sql)
-			rows = cursor.fetchall()
-			if rows:
-				for row in rows:
-					x = row[1]
-					x = [x.strip() for x in x.split(',')]
-					tags = x;
-					break
+			college = page['result'][0]['organization']
+		except:
+			college = ""
+		if college:
+			db_name="okrdx"
+			db = getDBObject(db_name)
+			cursor = db.cursor()
+			# print college
+			try:
+				sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
+				cursor.execute(sql)
+				rows = cursor.fetchall()
+				if rows:
+					for row in rows:
+						x = row[1]
+						x = [x.strip() for x in x.split(',')]
+						tags = x;
+						break
+				else:
+					errors.append('Error Fetching Data.')
+				db.close()
+			except MySQLdb.Error, e:
+				errors.append(str(e))
+
+			if not errors:
+				flag = 0
+				for tag in tags:
+					temp = college.find(tag)
+					if temp > -1:
+						flag = 1
+						break
+
+				if flag == 1:
+					response = json.dumps({'status': 'success'})
+
+				else:
+					response = json.dumps({'status': 'failure','errors':'college did not match'})
+
 			else:
-				errors.append('Error Fetching Data.')
-			db.close()
-		except MySQLdb.Error, e:
-			errors.append(str(e))
-
-		if not errors:
-			flag = 0
-			for tag in tags:
-				temp = college.find(tag)
-				if temp > -1:
-					flag = 1
-					break
-
-			if flag == 1:
-				response = json.dumps({'status': 'success'})
-
-			else:
-				response = json.dumps({'status': 'failure','errors':'college did not match'})
-
+				response = json.dumps({'status': 'failure','errors':errors})
 		else:
-			response = json.dumps({'status': 'failure','errors':errors})
+			response = json.dumps({'status': 'failure','errors':'college did not match'})
 
 	else:
 		response = json.dumps({'status': 'failure','errors':'incorrect handle'})
@@ -219,29 +225,66 @@ def setCodechefDb(requests):
 @csrf_exempt
 def addCollege(requests):
 	# pdb.set_trace()
-	if requests.method == 'POST':
-		college = requests.POST.get('college')
+	try:
+		if requests.method == 'GET':
+			college = requests.GET.get('college')
+			college = college.replace(',','')
+			college = college.replace('  ',' ')
+			college = college.lower()
+			tags = []
+			errors = []
+			db_name="okrdx"
+			db = getDBObject(db_name)
+			cursor = db.cursor()
 
-		try:
-			exist = College.objects.filter(collegeName=college)
-			if not exist:
-				add_college = College.objects.create(collegeName=college)
+			try:
+				exist = College.objects.filter(collegeName=college)
+				flag = 0
+				try:
+					sql = "SELECT * FROM collegeTags "
+					cursor.execute(sql)
+					rows = cursor.fetchall()
+					if rows:
+						for row in rows:
+							flag = 0
+							x = row[1]
+							x = [x.strip() for x in x.split(',')]
+							tags = x
+							for tag in tags:
+								temp = college.find(tag.lower())
+								if temp > -1:
+									flag = 1
+									break	
+							if flag == 1:
+								break					
+					else:
+						errors.append('Error Fetching Data.')
+					db.close()
+				except MySQLdb.Error, e:
+					errors.append(str(e))
 
-				if add_college:
-					response = { 'status':'success' }
+				if not exist and flag == 0:
+					add_college = College.objects.create(collegeName=college)
+
+					if add_college:
+						response = { 'status':'success' }
+					else:
+						response = { 'status':'failed', 'error':'problem adding college' }
 				else:
-					response = { 'status':'failed', 'error':'problem adding college' }
-			else:
-				response = { 'status':'failed', 'error':'already exists in database'}
-		
-		except ValidationError:	
-			response = { 'status':'failed', 'error':'error in database'}
+					response = { 'status':'failed', 'error':'already exists in database'}
+			
+			except ValidationError:	
+				response = { 'status':'failed', 'error':'error in database'}
 
-	else:
-		response = { 'status':'failed', 'error':'post request not recieved' }
+		else:
+			response = { 'status':'failed', 'error':'post request not recieved' }
 
-	response = HttpResponse(json.dumps(response),
-		mimetype = "application/json")
+		response = HttpResponse(json.dumps(response),
+			mimetype = "application/json")
+	except:
+		response = { 'status':'failed', 'error':'request data not recieved' }
+		response = HttpResponse(json.dumps(response),
+			mimetype = "application/json")
 
 	return response
 
@@ -286,6 +329,9 @@ def getTCCollege(handle,college_id):
 		ul = tds[len(tds)-1]
 		lis = ul.find_all('li')
 		college = lis[2].find_all('span')[0].text
+		college = college.replace(',','')
+		college = college.replace('  ',' ')
+		college = college.lower()
 		tags = []
 		errors = []
 		db_name="okrdx"
@@ -434,7 +480,7 @@ def fillCCTable(request,contest):
 
 	return response
 
-def updateCCRank(request,contest,run):
+def updateCCcontestRank(request,contest,run):
 	# pdb.set_trace()
 	try:
 		global t 
@@ -817,7 +863,7 @@ def updateCCRank(request):
 		users = Codechef.objects.all()
 		try:
 			for user in users:
-				if user.id > 2366:
+				if user.id  > 0:
 					# pdb.set_trace()
 					print user.handle
 					cc = "http://www.codechef.com/users/"+str(user.handle)
@@ -878,7 +924,7 @@ def updateCCRank(request):
 	return response
 
 def cfTable(request,contest):
-	db_name="okrdx"
+	db_name="codeforces"
 	db = getDBObject(db_name)
 	cursor = db.cursor()
 	errors = []
@@ -893,6 +939,163 @@ def cfTable(request,contest):
 		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
 
 	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
+
+def fillCFTable(request,contest):
+	# pdb.set_trace()
+	allUsers = Codeforces.objects.all()
+	db_name="codeforces"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	errors = []
+	try:
+		for user in allUsers:
+			sql = "INSERT INTO "+contest+" (handle, college_id ) VALUES (%s,%s)" 
+			# print sql
+			cursor.execute(sql,( user.handle, user.college.id ))
+		db.commit()
+
+	except MySQLdb.Error, e:
+		errors.append(str(e))
+
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
+def updateCFcontestRank(request,contest,run):
+	# pdb.set_trace()
+	try:
+		global t 
+		t = int (0)
+		i = 0
+		while True:
+			if t >= int(run):
+				print t
+				response = HttpResponse(json.dumps({'status': 'success','iterations':i}), mimetype="application/json")
+				break
+			# print t
+			# print run
+			ts = time.time()
+			cc = "http://codeforces.com/api/contest.standings?contestId="+str(contest)
+			page = urllib2.urlopen(cc).read()
+			db_name="codeforces"
+			db = getDBObject(db_name)
+			cursor = db.cursor()
+			errors = []
+			page = json.loads(page)
+			if page['status'] == "OK":
+				try:
+					for tr in page['result']['rows']:
+						if tr:
+							handle = tr['party']['members'][0]['handle']
+							points = tr['points']
+							rank = tr['rank']
+							sql = "SELECT * FROM CF"+contest+" WHERE handle = '{0}'".format(handle)
+							cursor.execute(sql)
+							row = cursor.fetchall()
+							if row:
+								sql = "UPDATE CF"+contest+" SET points = '{0}' , rank = '{1}' WHERE handle = '{2}'".format(points,rank,handle)
+								cursor.execute(sql)
+					db.commit()
+					te = time.time()
+					t = t + int(te - ts)
+					# print t
+
+				except MySQLdb.Error, e:
+					errors.append(str(e))
+
+				if not errors:
+					response = HttpResponse(json.dumps({'status': 'success','iterations':i+1}), mimetype="application/json")
+
+				else:
+					response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+				# print i+1," iteration(s) complete"
+				i = i +1
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure','errors':page['comment']}), mimetype="application/json")
+
+	except:
+		response = HttpResponse(json.dumps({'status': 'failure'}), mimetype="application/json")
+
+	return response
+
+
+def updateCFRank(request):
+	# pdb.set_trace()
+	try:
+		errors = []
+		users = Codeforces.objects.all()
+		try:
+			for user in users:
+				if user.id  > 690:
+					# pdb.set_trace()
+					print user.handle
+					cc = "http://codeforces.com/api/user.info?handles="+str(user.handle)
+					page = urllib2.urlopen(cc).read()
+					page = json.loads(page)
+					rank = page['result'][0]['rank']
+					rating = page['result'][0]['rating']
+					user.rank = rank
+					user.rating = rating
+					user.save()
+					print user.id
+					# break
+		except:
+			errors.append("error in updating data "+user.id)
+
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+		# print i+1," iteration(s) complete"
+
+	except:
+		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	return response
+
+
+def updateTCRank(request):
+	# pdb.set_trace()
+	try:
+		errors = []
+		users = Topcoder.objects.all()
+		try:
+			for user in users:
+				if user.id  > 163:
+					# pdb.set_trace()
+					print user.handle
+					cc = "http://community.topcoder.com/tc?module=BasicData&c=dd_rating_history&cr="+str(user.coderId)
+					page = urllib2.urlopen(cc).read()
+					page = bs(page)
+					rows = page.find_all("row")
+					if rows:
+						rating = rows[0].find_all("new_rating")[0].text
+						rank = rows[0].find_all("rank")[0].text
+						user.rank = rank
+						user.rating = rating
+						user.save()
+					print user.id
+					# break
+		except:
+			errors.append("error in updating data "+user.id)
+
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+		# print i+1," iteration(s) complete"
+
+	except:
 		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
 
 	return response

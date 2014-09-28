@@ -16,6 +16,10 @@ class Codeforces(models.Model):
 	handle = models.CharField(max_length=100)
 	college = models.ForeignKey(College,null=True)
 	name = models.CharField(max_length=200,null=True)
+	rating = models.IntegerField(default=-1)
+	orating = models.IntegerField(default=-1)
+	rank = models.CharField(max_length=100,null=True)
+	orank = models.CharField(max_length=100,null=True)
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 
@@ -23,6 +27,10 @@ class Topcoder(models.Model):
 	handle = models.CharField(max_length=100)
 	college = models.ForeignKey(College,null=True)
 	coderId = models.CharField(max_length=100)
+	rating = models.IntegerField(default=-1)
+	orating = models.IntegerField(default=-1)
+	rank = models.IntegerField(default=-1)
+	orank = models.IntegerField(default=-1)
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 
@@ -36,9 +44,12 @@ class Codechef(models.Model):
 	globalSRank = models.IntegerField(default=-1)
 	countryLTRank = models.IntegerField(default=-1)
 	globalLTRank = models.IntegerField(default=-1)
-	lRating = models.FloatField(default=-1.0)
-	sRating = models.FloatField(default=-1.0)
-	ltRating = models.FloatField(default=-1.0)
+	ocountryLRank = models.IntegerField(default=-1)
+	oglobalLRank = models.IntegerField(default=-1)
+	ocountrySRank = models.IntegerField(default=-1)
+	oglobalSRank = models.IntegerField(default=-1)
+	ocountryLTRank = models.IntegerField(default=-1)
+	oglobalLTRank = models.IntegerField(default=-1)
 
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
