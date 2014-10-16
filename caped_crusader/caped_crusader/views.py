@@ -956,7 +956,7 @@ def fillCFTable(request,contest):
 	errors = []
 	try:
 		for user in allUsers:
-			sql = "INSERT INTO "+contest+" (handle, college_id ) VALUES (%s,%s)" 
+			sql = "INSERT INTO CF"+contest+" (handle, college_id ) VALUES (%s,%s)" 
 			# print sql
 			cursor.execute(sql,( user.handle, user.college.id ))
 		db.commit()
