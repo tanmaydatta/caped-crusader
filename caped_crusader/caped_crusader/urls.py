@@ -9,6 +9,7 @@ urlpatterns = patterns('caped_crusader.views',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^hello/', 'hello'),
+    url(r'^getallColleges/', 'getallColleges'),
     url(r'^addCollege/','addCollege'),
     url(r'^setCodechefDb/','setCodechefDb'),
     url(r'^updateCFUserlist/','updateCFUserlist'),

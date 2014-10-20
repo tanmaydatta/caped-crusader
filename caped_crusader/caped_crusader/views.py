@@ -78,6 +78,8 @@ def hello(requests):
 		response = HttpResponse(json.dumps({'sessid': 'null'}), mimetype="application/json")
 	return response
 
+
+
 def getCFCollege(handle,college_id):
 	cc = "http://codeforces.com/api/user.info?handles="+str(handle)
 	# print cc
@@ -164,6 +166,19 @@ def addCfUser(requests):
 
 	return response
 
+
+@csrf_exempt
+def getallColleges(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		allCollege = College.objects.all()
+		for college in allCollege:
+			response.append(college.collegeName);
+		response = HttpResponse(json.dumps({'status': 'success','details': response}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
 
 @csrf_exempt
 def updateCFUserlist(requests):
