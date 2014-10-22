@@ -44,6 +44,8 @@ import requests
 
 t = 0
 
+url = "http://localhost:8000/"
+
 def testCCauth(requests):
 	cc = "http://www.codechef.com/contests"
 	page = urllib2.urlopen(cc)
@@ -759,6 +761,7 @@ def syncCCCollege(request):
 
 
 def getCCCollege(handle,college_id):
+	# pdb.set_trace()
 	cc = "http://www.codechef.com/users/"+str(handle)
 	# print cc
 	page = requests.get(cc)
@@ -770,16 +773,20 @@ def getCCCollege(handle,college_id):
 	else:
 		table = x[1]
 		trs = table.find_all("tr")
-		tds = trs[9].find_all("td")
+		tds = trs[8].find_all("td")
 		college = tds[1].text
-		tds = trs[1].find_all("td")
-		name = tds[1].text
+		table = x[0]
+		trs = table.find_all("tr")
+		tds = trs[0].find_all("td")
+		div = tds[0].find_all('div', {'class': 'user-name-box'})
+		name = div[0].text
 		tags = []
 		errors = []
 		db_name="okrdx"
 		db = getDBObject(db_name)
 		cursor = db.cursor()
-		# print college
+		# print name
+		# user-name-box
 		try:
 			sql = "SELECT * FROM collegeTags WHERE id = '{0}'".format(str(college_id))
 			cursor.execute(sql)
@@ -816,20 +823,27 @@ def getCCCollege(handle,college_id):
 	return response
 
 def addCCUser(requests):
+	# pdb.set_trace()
 	if requests.method == 'POST':
 		handle = requests.POST.get('handle')
 		college = requests.POST.get('college')
 		college = getCCCollege(handle,college)
 		college1 = json.loads(college)
 		if college1['status'] == 'success':
-			name = college['name']
+			name = college1['name']
 			college = requests.POST.get('college')
 			response = []
 			exists = Codechef.objects.filter(handle=handle)
 			if not exists:
 				add_user = Codechef.objects.create(handle=handle,college=College.objects.get(id=college),name=name)
 				if add_user:
-					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+					cc = url + "updateCCRank/" + handle + "/"		
+					page = urllib2.urlopen(cc).read()
+					page = json.loads(page)
+					if page['status'] == 'success':
+						response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
+					else:
+						response = HttpResponse(json.dumps({'status': 'failure','details': 'could not update rank'}), mimetype="application/json")
 				else:
 					response = HttpResponse(json.dumps({'status': 'failure','details': 'could not add user'}), mimetype="application/json")
 
@@ -844,7 +858,7 @@ def addCCUser(requests):
 	return response
 
 def updateCCNames(request):
-	pdb.set_trace()
+	# pdb.set_trace()
 	try:
 		i = 0
 		allObjects = Codechef.objects.all()
@@ -987,16 +1001,20 @@ def updateSyncCFNames(request):
 
 
 
-def updateCCRank(request):
-	pdb.set_trace()
+def updateCCRank(request,handle):
+	# pdb.set_trace()
 	try:
 		errors = []
 		users = Codechef.objects.all()
 		try:
 			for user in users:
-				if user.id  > 0:
+				if handle == '1':
+					condition = user.id > 0	
+				else:
+					condition = user.handle == handle
+				if condition:
 					# pdb.set_trace()
-					print user.handle
+					# print user.handle
 					cc = "http://www.codechef.com/users/"+str(user.handle)
 					page = urllib2.urlopen(cc).read()
 					page = bs(page)
@@ -1037,7 +1055,7 @@ def updateCCRank(request):
 							user.countryLTRank = int(cltrank)
 						user.ltRating = float(ltrating)
 					user.save()
-					print user.id
+					# print user.id
 					# break
 		except:
 			errors.append("error in updating data "+user.id)
