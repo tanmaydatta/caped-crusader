@@ -180,6 +180,7 @@ def getallColleges(requests):
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 	return response
 
+
 @csrf_exempt
 def updateCFUserlist(requests):
 	# pdb.set_trace()
@@ -201,6 +202,118 @@ def updateCFUserlist(requests):
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not recieved'}), mimetype="application/json")
 	return response
 
+@csrf_exempt
+def getCCContestRank(requests,contest):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		errors = []
+		data = []
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		flag = 0
+		college = College.objects.filter(collegeName=requests.POST.get('college'))
+		# print college[0].id
+		contest = contest.upper()
+		try:
+			cursor.execute("SELECT * FROM "+str(contest)+" WHERE college_id = "+str(college[0].id)+" ORDER BY score DESC")
+			rows = cursor.fetchall()
+			if rows:
+				for row in rows:
+					name = Codechef.objects.filter(handle=row[0])
+					try:
+						name = name[0].name
+						data.append({'handle' : row[0],'score':row[1],'name' : name})
+					except:
+						name = ""
+					
+			else:
+				errors.append('Error Fetching Data.')
+		except MySQLdb.Error, e:
+			errors.append(str(e))
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
+
+@csrf_exempt
+def getCCContests(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		errors = []
+		data = []
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		cursor.execute("SHOW TABLES FROM okrdx")
+		rows = cursor.fetchall()
+		if rows:
+			for row in rows:
+				if row[0] != 'collegeTags' and row[0] != 'detail':
+					data.append(row[0])
+		else:
+			errors.append('Error Fetching Data.')
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
+
+def correctCCCollegeId(requests):
+	pdb.set_trace()
+	response = []
+	errors = []
+	data = []
+	db_name="okrdx"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	cursor.execute("SHOW TABLES FROM okrdx")
+	rows = cursor.fetchall()
+	t = 0
+	# for row in rows:
+	row = rows[7]
+	print row[0]
+	if row[0] == 'AUG14':
+		cursor.execute("SELECT * FROM "+row[0])
+		rows1 = cursor.fetchall()
+		for row1 in rows1:
+			try:
+				try:
+					user = Codechef.objects.filter(handle=row1[0])
+					college = user[0].college.id
+				except:
+					college = row1[2]
+				# if row1[0] == 'nitish_iitr':
+				# print college
+				# print row1[2]
+				if row1[2] != college:
+					# print row[0]
+					sql = "UPDATE "+row[0]+" SET college_id = "+str(college)+" WHERE handle LIKE '"+row1[0]+"'"
+					print sql
+					try:
+						cursor.execute(sql)
+						row2 = cursor.fetchall()
+						print row2
+					except MySQLdb.Error, e:
+						errors.append(str(e))
+			except MySQLdb.Error, e:
+				errors.append(str(e))
+				
+		# print t+1
+		# t = t+1
+		db.commit()
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+	else :
+		response = HttpResponse(json.dumps({'status': 'failure','details': errors}), mimetype="application/json")
+	return response
 def setCodechefDb(requests):
 	if requests.method == 'GET':
 		db_name="okrdx"
@@ -1088,17 +1201,20 @@ def updateTCRank(request):
 		users = Topcoder.objects.all()
 		try:
 			for user in users:
-				if user.id  > 163:
+				if user.id  == 2221:
 					# pdb.set_trace()
 					print user.handle
 					cc = "http://community.topcoder.com/tc?module=BasicData&c=dd_rating_history&cr="+str(user.coderId)
 					page = urllib2.urlopen(cc).read()
 					page = bs(page)
 					rows = page.find_all("row")
+					size = len(rows)
 					if rows:
-						rating = rows[0].find_all("new_rating")[0].text
-						rank = rows[0].find_all("rank")[0].text
+						rating = rows[size-1].find_all("new_rating")[0].text
+						orating = rows[size-1].find_all("old_rating")[0].text
+						rank = rows[size-1].find_all("rank")[0].text
 						user.rank = rank
+						user.orating = orating
 						user.rating = rating
 						user.save()
 					print user.id

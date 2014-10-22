@@ -30,7 +30,7 @@ class Topcoder(models.Model):
 	rating = models.IntegerField(default=-1)
 	orating = models.IntegerField(default=-1)
 	rank = models.IntegerField(default=-1)
-	orank = models.IntegerField(default=-1)
+	# orank = models.IntegerField(default=-1)
 	def __repr__(self):
 		return '<handle: %s>' % self.handle
 

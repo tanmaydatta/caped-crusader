@@ -10,6 +10,8 @@ urlpatterns = patterns('caped_crusader.views',
 
     url(r'^hello/', 'hello'),
     url(r'^getallColleges/', 'getallColleges'),
+    url(r'^getCCContests/', 'getCCContests'),
+    url(r'^getCCContestRank/(?P<contest>\w+)', 'getCCContestRank'),
     url(r'^addCollege/','addCollege'),
     url(r'^setCodechefDb/','setCodechefDb'),
     url(r'^updateCFUserlist/','updateCFUserlist'),
@@ -34,5 +36,6 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^updateCFRank/', 'updateCFRank'),
     url(r'^updateTCRank/', 'updateTCRank'),
     url(r'^cfTable/(?P<contest>\w+)', 'cfTable'),
+    url(r'^correctCCCollegeId/', 'correctCCCollegeId'),
 )
 
