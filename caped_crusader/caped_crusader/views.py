@@ -71,6 +71,11 @@ def setId(requests):
 	return HttpResponse(json.dumps({'sessid': x}), mimetype="application/json")
 
 @csrf_exempt
+def form(requests):
+	print requests.POST
+	return HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+
+@csrf_exempt
 def hello(requests):
 	# pdb.set_trace()
 	try:
@@ -241,6 +246,61 @@ def getCCContestRank(requests,contest):
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 	return response
+
+@csrf_exempt
+def ccContestRanks(requests,contest):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		errors = []
+		data = []
+		college = College.objects.filter(collegeName=requests.POST.get('college'))
+		# print college[0].id
+		users = Codechef.objects.filter(college=college[0].id)
+		# users.sort(key=operator.attrgetter('globalLRank'))
+		if contest == 'long':
+			users = users.order_by('globalLRank')
+		else :
+			users = users.order_by('globalSRank')
+		try:
+			for user in users:
+				name = user.name
+				handle = user.handle
+				if contest == 'long':
+					grank = user.globalLRank
+					crank = user.countryLRank
+					grankchange = user.globalLRank - user.oglobalLRank
+				else :
+					grank = user.globalSRank
+					crank = user.countrySRank
+					grankchange = user.globalSRank - user.oglobalSRank
+				if grank > 0:
+					data.append({'handle' : handle,'rank':grank,'crank':crank,'name' : name,'rankchange':grankchange})
+					
+			for user in users:
+				name = user.name
+				handle = user.handle
+				if contest == 'long':
+					grank = user.globalLRank
+					crank = user.countryLRank
+					grankchange = user.globalLRank - user.oglobalLRank
+				else :
+					grank = user.globalSRank
+					crank = user.countrySRank
+					grankchange = user.globalSRank - user.oglobalSRank
+				if grank < 0:
+					data.append({'handle' : handle,'rank':grank,'crank':crank,'name' : name,'rankchange':grankchange})
+					
+		except :
+			errors.append("error fetching data")
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
+
 
 @csrf_exempt
 def getCCContests(requests):

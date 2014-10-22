@@ -9,6 +9,8 @@ urlpatterns = patterns('caped_crusader.views',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^hello/', 'hello'),
+    url(r'^form/', 'form'),
+    url(r'^ccContestRanks/(?P<contest>\w+)', 'ccContestRanks'),
     url(r'^getallColleges/', 'getallColleges'),
     url(r'^getCCContests/', 'getCCContests'),
     url(r'^getCCContestRank/(?P<contest>\w+)', 'getCCContestRank'),
