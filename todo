@@ -1,6 +1,6 @@
 update/set user rating
 update/set user names
-add new user to archive
-add global rank of contest
+** add new user to archive
+** add global rank of contest
 sync handles with college id in archive
 probably set up archive again OR make dummy table and check if new user is added
