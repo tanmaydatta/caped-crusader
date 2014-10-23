@@ -71,9 +71,27 @@ def setId(requests):
 	return HttpResponse(json.dumps({'sessid': x}), mimetype="application/json")
 
 @csrf_exempt
-def form(requests):
-	print requests.POST
-	return HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+def checkCollege(requests):
+	# pdb.set_trace()
+	errors = []
+	try:
+		if requests.POST.get('college'):
+			flag = 0
+			colleges = College.objects.all()
+			for college in colleges:
+				if requests.POST.get('college') == college.collegeName:
+					flag = 1
+					break
+			if flag == 0:
+				errors.append('Incorrect college name entered!')
+	except:
+		error.append('Error fetching data!')
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success','details': requests.POST.get('college')}), mimetype="application/json")
+	else :
+		response = HttpResponse(json.dumps({'status': 'failure', 'errors': errors}), mimetype="application/json")
+
+	return response
 
 @csrf_exempt
 def hello(requests):
@@ -260,6 +278,8 @@ def ccContestRanks(requests,contest):
 		# users.sort(key=operator.attrgetter('globalLRank'))
 		if contest == 'long':
 			users = users.order_by('globalLRank')
+		elif contest == 'lunchtime':
+			users = users.order_by('globalLTRank')
 		else :
 			users = users.order_by('globalSRank')
 		try:
@@ -270,6 +290,10 @@ def ccContestRanks(requests,contest):
 					grank = user.globalLRank
 					crank = user.countryLRank
 					grankchange = user.globalLRank - user.oglobalLRank
+				elif contest == 'lunchtime':
+					grank = user.globalLTRank
+					crank = user.countryLTRank
+					grankchange = user.globalLTRank - user.oglobalLTRank
 				else :
 					grank = user.globalSRank
 					crank = user.countrySRank
@@ -284,6 +308,10 @@ def ccContestRanks(requests,contest):
 					grank = user.globalLRank
 					crank = user.countryLRank
 					grankchange = user.globalLRank - user.oglobalLRank
+				elif contest == 'lunchtime':
+					grank = user.globalLTRank
+					crank = user.countryLTRank
+					grankchange = user.globalLTRank - user.oglobalLTRank
 				else :
 					grank = user.globalSRank
 					crank = user.countrySRank
