@@ -242,7 +242,7 @@ def getCCContestRank(requests,contest):
 		# print college[0].id
 		contest = contest.upper()
 		try:
-			cursor.execute("SELECT * FROM "+str(contest)+" WHERE college_id = "+str(college[0].id)+" ORDER BY score DESC")
+			cursor.execute("SELECT * FROM "+str(contest)+" WHERE college_id = "+str(college[0].id)+" ORDER BY score DESC , handle ASC")
 			rows = cursor.fetchall()
 			if rows:
 				for row in rows:
@@ -300,7 +300,9 @@ def ccContestRanks(requests,contest):
 					grankchange = user.globalSRank - user.oglobalSRank
 				if grank > 0:
 					data.append({'handle' : handle,'rank':grank,'crank':crank,'name' : name,'rankchange':grankchange})
-					
+			
+			users = users.order_by('name')
+
 			for user in users:
 				name = user.name
 				handle = user.handle
