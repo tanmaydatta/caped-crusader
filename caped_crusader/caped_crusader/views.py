@@ -205,6 +205,42 @@ def getallColleges(requests):
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 	return response
 
+@csrf_exempt
+def getCurrentContests(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		names = []
+		codes = []
+		endTimes = []
+		cc = "http://www.codechef.com/contests/"
+		page = urllib2.urlopen(cc).read()
+		page = bs(page)
+		headings = page.find_all('h3')
+		flag = -1
+		i = 0
+		for h in headings:
+			i = i + 1
+			if 'Future' in h.text:
+				flag = i - 1
+
+		if flag >= 0:
+			divs = page.find_all('div',{'class': 'table-questions'})
+			div = divs[flag]
+			tables = div.find_all('table')
+			trs = tables[0].find_all('tr')
+			for tr in trs:
+				tds = tr.find_all('td')
+				if len(tds) > 0:
+					codes.append(tds[0].text)
+					names.append(tds[1].text)
+					endTimes.append(tds[3].text)
+
+		response = HttpResponse(json.dumps({'status': 'success','codes': codes, 'names': names, 'END': endTimes}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
+
 
 @csrf_exempt
 def updateCFUserlist(requests):
