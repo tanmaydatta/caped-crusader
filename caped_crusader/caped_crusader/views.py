@@ -221,7 +221,7 @@ def getCurrentContests(requests):
 		i = 0
 		for h in headings:
 			i = i + 1
-			if 'Future' in h.text:
+			if 'Present' in h.text:
 				flag = i - 1
 
 		if flag >= 0:
