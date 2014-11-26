@@ -95,13 +95,14 @@ def checkCollege(requests):
 
 @csrf_exempt
 def hello(requests):
-	# pdb.set_trace()
-	try:
-		y = requests.session['id']
-		response = HttpResponse(json.dumps({'sessid': y}), mimetype="application/json")
-	except:
-		response = HttpResponse(json.dumps({'sessid': 'null'}), mimetype="application/json")
-	return response
+	pdb.set_trace()
+	abc = Codeforces.objects.get(pk>=0)
+	# try:
+	# 	y = requests.session['id']
+	# 	response = HttpResponse(json.dumps({'sessid': y}), mimetype="application/json")
+	# except:
+	# 	response = HttpResponse(json.dumps({'sessid': 'null'}), mimetype="application/json")
+	# return response
 
 
 
@@ -208,6 +209,7 @@ def getallColleges(requests):
 @csrf_exempt
 def getCurrentContests(requests):
 	# pdb.set_trace()
+	# print requests
 	if requests.method == 'POST':
 		response = []
 		names = []
@@ -235,6 +237,28 @@ def getCurrentContests(requests):
 					codes.append(tds[0].text)
 					names.append(tds[1].text)
 					endTimes.append(tds[3].text)
+
+		errors = [] 
+		db_name="okrdx"
+		db = getDBObject(db_name)
+		global url
+		# pdb.set_trace()
+		if len(codes) > 0:
+			for code in codes:
+				try:
+					cursor = db.cursor()
+					cursor.execute("SELECT * from " + code)
+					cc = url + "updateCCRank/" + code + "/1"
+					page = urllib2.urlopen(cc).read()
+					print page
+					db.close()
+				except MySQLdb.Error, e:
+					cc = url + "ccTable/" + code
+					page = urllib2.urlopen(cc)
+					cc = url + "fillCCTable/" + code
+					page = urllib2.urlopen(cc)
+					cc = url + "updateCCRank/" + code + "/1"
+					page = urllib2.urlopen(cc)
 
 		response = HttpResponse(json.dumps({'status': 'success','codes': codes, 'names': names, 'END': endTimes}), mimetype="application/json")
 	else:
@@ -693,6 +717,8 @@ def get_cc_rank(request,contest,get_handle):
 
 
 def ccTable(request,contest):
+	pdb.set_trace()
+	# print request
 	db_name="okrdx"
 	db = getDBObject(db_name)
 	cursor = db.cursor()
@@ -752,24 +778,18 @@ def updateCCcontestRank(request,contest,run):
 			# print t
 			# print run
 			ts = time.time()
-			cc = "http://www.codechef.com/rankings/"+contest
-			page = requests.get(cc)
+			cc = "http://www.codechef.com/api/rankings/"+contest
+			page = requests.get(cc).text
+			page = json.loads(page)
 			db_name="okrdx"
 			db = getDBObject(db_name)
 			cursor = db.cursor()
 			errors = []
-			page = page.text
-			x = page.find("<table>")
-			y = page.find("</table>",x)
-			table = page[x:y]
-			table = bs(table)
-			trs = table.find_all("tr")
+			page = page['rankings']
 			try:
-				for tr in trs:
-					tds = tr.find_all("td")
-					if tds:
-						handle = tds[1].find("a").text
-						score = tds[len(tds)-1].text
+				for ranks in page:
+						handle = ranks['user_handle']
+						score = ranks['score']
 						sql = "SELECT * FROM "+contest+" WHERE handle = '{0}'".format(handle)
 						cursor.execute(sql)
 						row = cursor.fetchall()
@@ -1128,73 +1148,100 @@ def updateSyncCFNames(request):
 
 
 def updateCCRank(request,handle):
-	# pdb.set_trace()
-	try:
-		errors = []
-		users = Codechef.objects.all()
+	pdb.set_trace()
+	i = 5120
+	users = Codechef.objects.all()
+	last = users[len(users)-1].id
+	errors = []
+	ids=[]
+	while not errors and i<last:
 		try:
 			for user in users:
 				if handle == '1':
-					condition = user.id > 0	
+					condition = user.id > i
 				else:
 					condition = user.handle == handle
+					i=10000
 				if condition:
 					# pdb.set_trace()
 					# print user.handle
-					cc = "http://www.codechef.com/users/"+str(user.handle)
-					page = urllib2.urlopen(cc).read()
-					page = bs(page)
-					tables = page.find_all("table",{'class':'rating-table'})
-					trs = tables[0].find_all("tr")
-					tds = trs[1].find_all("td")
-					Long = tds[1].find_all("hx")
-					glrank = Long[0].text
-					if glrank.replace('.','',1).isdigit():
-						user.globalLRank = int(glrank)
-						clrank = Long[1].text
-						lrating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
-						if clrank.replace('.','',1).isdigit():
-							user.countryLRank = int(clrank)
-						user.lRating = float(lrating)
-					tds = trs[2].find_all("td")
-					Short = tds[1].find_all("hx")
-					gsrank = Short[0].text
-					if gsrank.replace('.','',1).isdigit():
-						user.globalSRank = int(gsrank)
-						csrank = Short[1].text
-						srating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
-						user.sRating = float(srating)
-						if csrank.replace('.','',1).isdigit():
-							user.countrySRank = int(csrank)
-
-					tds = trs[3].find_all("td")
-					Lunch = tds[1].find_all("hx")
-					gltrank = Lunch[0].text
-					if gltrank.replace('.','',1).isdigit():
-						user.globalLTRank = int(gltrank)
+					try:
+						cc = "http://www.codechef.com/users/"+str(user.handle)
+						page = urllib2.urlopen(cc,timeout=5)
+						if page:
+							page = page.read()
+						else:
+							page = []
+							ids.append(user.id)
+							print "error id: "+str(user.id)
+					except:
+						page=[]
+						ids.append(user.id)
+						print "error id: "+str(user.id)
+					if page:
+						page = bs(page)
+						tables = page.find_all("table",{'class':'rating-table'})
 						try:
-							cltrank = Lunch[1].text
+							trs = tables[0].find_all("tr")
+							tds = trs[1].find_all("td")
+							Long = tds[1].find_all("hx")
+							glrank = Long[0].text
+							if glrank.replace('.','',1).isdigit():
+								user.globalLRank = int(glrank)
+								clrank = Long[1].text
+								lrating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
+								if clrank.replace('.','',1).isdigit():
+									user.countryLRank = int(clrank)
+								user.lRating = float(lrating)
+							tds = trs[2].find_all("td")
+							Short = tds[1].find_all("hx")
+							gsrank = Short[0].text
+							if gsrank.replace('.','',1).isdigit():
+								user.globalSRank = int(gsrank)
+								csrank = Short[1].text
+								srating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
+								user.sRating = float(srating)
+								if csrank.replace('.','',1).isdigit():
+									user.countrySRank = int(csrank)
+
+							tds = trs[3].find_all("td")
+							Lunch = tds[1].find_all("hx")
+							gltrank = Lunch[0].text
+							if gltrank.replace('.','',1).isdigit():
+								user.globalLTRank = int(gltrank)
+								try:
+									cltrank = Lunch[1].text
+								except:
+									cltrank = ""
+								ltrating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
+								if cltrank.replace('.','',1).isdigit():
+									user.countryLTRank = int(cltrank)
+								user.ltRating = float(ltrating)
+							user.save()
+							print user.id
+							i = user.id
 						except:
-							cltrank = ""
-						ltrating =float(''.join(ele for ele in tds[2].text if ele.isdigit() or ele == '.'))
-						if cltrank.replace('.','',1).isdigit():
-							user.countryLTRank = int(cltrank)
-						user.ltRating = float(ltrating)
-					user.save()
-					# print user.id
-					# break
+							print "error"
+							errors.append("error in updating data "+str(user.id))
+						# break
 		except:
-			errors.append("error in updating data "+user.id)
+			print "error1"
+			errors.append("error in updating data ")
 
 		if not errors:
-			response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+			response = HttpResponse(json.dumps({'status': 'success','errorids':ids}), mimetype="application/json")
 
 		else:
-			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+			print errors
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors,'errorids':ids}), mimetype="application/json")
 		# print i+1," iteration(s) complete"
 
-	except:
-		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+	# except:
+	# 	print "error"
+	# 	response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+
+	# if i!=last:
+	# 	goto again
 
 	return response
 

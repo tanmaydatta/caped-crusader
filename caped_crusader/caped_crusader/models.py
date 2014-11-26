@@ -13,7 +13,7 @@ class College(models.Model):
 		return '<college: %s>' % self.collegeName
 
 class Codeforces(models.Model):
-	handle = models.CharField(max_length=100)
+	handle = models.CharField(max_length=100,primary_key=True)
 	college = models.ForeignKey(College,null=True)
 	name = models.CharField(max_length=200,null=True)
 	rating = models.IntegerField(default=-1)
@@ -57,10 +57,14 @@ class Codechef(models.Model):
 class user(models.Model):
 	Firstname = models.CharField(max_length=100)
 	Lastname = models.CharField(max_length=200, null=True)
-	Email = models.EmailField(default='test@test.com')
+	Email = models.EmailField()
 	Password = models.CharField(max_length=100)
-	college = models.ForeignKey(College,default=1)
-	codechef = models.CharField(max_length=100, null=True)
-	codeforces = models.CharField(max_length=100, null=True)
-	topcoder = models.CharField(max_length=100, null=True)
-	spoj = models.CharField(max_length=100, null=True)
+	Username = models.CharField(max_length=100)	
+
+	def __repr__(self):
+		return '<username: %s>' % self.Username
+	# college = models.ForeignKey(College,default=1)
+	# codechef = models.CharField(max_length=100, null=True)
+	# codeforces = models.CharField(max_length=100, null=True)
+	# topcoder = models.CharField(max_length=100, null=True)
+	# spoj = models.CharField(max_length=100, null=True)
