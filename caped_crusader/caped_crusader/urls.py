@@ -40,5 +40,6 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^updateTCRank/', 'updateTCRank'),
     url(r'^cfTable/(?P<contest>\w+)', 'cfTable'),
     url(r'^correctCCCollegeId/', 'correctCCCollegeId'),
+    url(r'^createProblemTableCF', 'createProblemTableCF'),
 )
 

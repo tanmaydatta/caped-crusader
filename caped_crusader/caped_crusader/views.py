@@ -46,6 +46,7 @@ t = 0
 
 url = "http://localhost:8000/"
 
+#test function
 def testCCauth(requests):
 	cc = "http://www.codechef.com/contests"
 	page = urllib2.urlopen(cc)
@@ -53,6 +54,7 @@ def testCCauth(requests):
 	x = page.find_all('div', {'id': 'custom-login'})
 	return HttpResponse(x)
 
+#test function
 def del_Id(requests):
 	del requests.session['id']
 	# print "true"
@@ -63,6 +65,7 @@ def getDBObject(db_name):
     db = MySQLdb.connect(settings.MYSQL_HOST,settings.MYSQL_USERNAME,settings.MYSQL_PASSWORD,db_name)
     return db
 
+#test function
 @csrf_exempt
 def setId(requests):
 	pdb.set_trace()
@@ -93,6 +96,8 @@ def checkCollege(requests):
 
 	return response
 
+
+#test function
 @csrf_exempt
 def hello(requests):
 	pdb.set_trace()
@@ -1149,12 +1154,12 @@ def updateSyncCFNames(request):
 
 def updateCCRank(request,handle):
 	pdb.set_trace()
-	i = 5120
+	i = 0
 	users = Codechef.objects.all()
 	last = users[len(users)-1].id
 	errors = []
 	ids=[]
-	while not errors and i<last:
+	while not errors and i<last-1:
 		try:
 			for user in users:
 				if handle == '1':
@@ -1423,4 +1428,86 @@ def updateTCRank(request):
 	except:
 		response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
 
+	return response
+
+def createProblemTableCF(request):
+	# pdb.set_trace()
+	errors=[]
+	db_name="problems"
+	db = getDBObject(db_name)
+	cursor = db.cursor()
+	cc="http://codeforces.com/api/problemset.problems"
+	sql = "CREATE TABLE if not exists AllProblems (ID int NOT NULL AUTO_INCREMENT PRIMARY KEY,name varchar(200) NOT NULL,url varchar(200) NOT NULL UNIQUE, tags varchar(200))"
+	cursor.execute(sql)
+	try:
+		page = requests.get(cc).text
+		page = json.loads(page)
+		page = page['result']['problems']
+		tagList = []
+		for problem in page:
+			tags = problem['tags']
+			for tag in tags:
+				tagList.append(str(tag))
+		# pdb.set_trace()
+		db.commit()
+		uniqueTags = set(tagList)
+		tags=[]
+		tagList=[]
+		for uniqueTag in uniqueTags:
+			tagList.append(uniqueTag)
+			try:
+				uniqueTag = uniqueTag.replace(" ","_")
+				uniqueTag = uniqueTag.replace("-","_")
+				sql = "CREATE TABLE if not exists " + uniqueTag + " (ID varchar(10) NOT NULL PRIMARY KEY)"
+				cursor.execute(sql)
+			except MySQLdb.Error, e:
+				errors.append(str(e))
+			tags.append(uniqueTag)
+		# pdb.set_trace()
+		i = 0
+		for problem in page:
+			tags = problem['tags']
+			if tags:
+				try:
+					problemUrl = "http://codeforces.com/contest/"+str(problem['contestId'])+"/problem/"+str(problem['index'])
+					problemName = str(problem['name'])
+					sqltags = ""
+					for tag in tags:
+						tag = tag.replace(" ","_")
+						tag = tag.replace("-","_")
+						sqltags = sqltags + str(tag) + ", "
+						# sqltags = sqltags[:-2]
+					try:
+						sql = "INSERT INTO AllProblems (name, url,tags ) VALUES (%s,%s,%s)" 
+						# print sql
+						cursor.execute(sql,( problemName, problemUrl,sqltags ))
+						i = i + 1
+						try:
+							# tags = problem['tags']
+							for tag in tags:
+								# pdb.set_trace()
+								tag = tag.replace(" ","_")
+								tag = tag.replace("-","_")
+								sql = "INSERT INTO "+ tag +" (ID ) VALUES (%s)" 
+								# print sql
+								x = ""
+								x = x + str(i)
+								cursor.execute(sql,(x,))
+						except MySQLdb.Error, e:
+							errors.append(str(e))
+					except MySQLdb.Error, e:
+						errors.append(str(e))
+				except:
+					continue
+		print i
+		# pdb.set_trace()
+		db.commit()
+		db.close()
+
+	except:
+		errors.append("Error fetching information");
+	if not errors:
+		response = HttpResponse(json.dumps({'status': 'success', 'tags': tagList}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure', 'error': errors}), mimetype="application/json")
 	return response
