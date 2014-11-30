@@ -68,3 +68,12 @@ class user(models.Model):
 	# codeforces = models.CharField(max_length=100, null=True)
 	# topcoder = models.CharField(max_length=100, null=True)
 	# spoj = models.CharField(max_length=100, null=True)
+
+class contactUs(models.Model):
+	Name = models.CharField(max_length=100)
+	Phone = models.CharField(max_length=100, null=True)
+	Email = models.EmailField()
+	Message = models.CharField(max_length=100)
+
+	def __repr__(self):
+		return '<username: %s>' % self.Name

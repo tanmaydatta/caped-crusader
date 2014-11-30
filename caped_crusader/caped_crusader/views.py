@@ -15,6 +15,7 @@ import pprint
 import random
 import requests
 import time
+import numpy as np
 from bs4 import BeautifulSoup as bs
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
@@ -110,14 +111,30 @@ def hello(requests):
 	# return response
 
 
+def getCollegeId(college):
+	errors = []
+	try:
+		colleges = College.objects.filter(collegeName=college)
+		if colleges:
+			response = json.dumps({'status': 'success', 'id': colleges[0].id})
+		else:
+			response = json.dumps({'status': 'failure', 'details': 'incorrect college name'})
+	except:
+		response = json.dumps({'status': 'failure', 'details': 'error fetching data'})
+	return response
 
 def getCFCollege(handle,college_id):
+	pdb.set_trace()
 	cc = "http://codeforces.com/api/user.info?handles="+str(handle)
 	# print cc
-	page = urllib2.urlopen(cc).read()
-	page = json.loads(page)
+	page=""
+	try:
+		page = urllib2.urlopen(cc).read()
+	except:
+		page = json.dumps({'status': 'fail'})
 	tags = []
 	errors = []
+	page = json.loads(page)
 	if page['status'] == 'OK':
 		try:
 			college = page['result'][0]['organization']
@@ -156,32 +173,39 @@ def getCFCollege(handle,college_id):
 					response = json.dumps({'status': 'success'})
 
 				else:
-					response = json.dumps({'status': 'failure','errors':'college did not match'})
+					response = json.dumps({'status': 'failure','details':'college did not match'})
 
 			else:
-				response = json.dumps({'status': 'failure','errors':errors})
+				response = json.dumps({'status': 'failure','details':errors})
 		else:
-			response = json.dumps({'status': 'failure','errors':'college did not match'})
+			response = json.dumps({'status': 'failure','details':'college did not match'})
 
 	else:
-		response = json.dumps({'status': 'failure','errors':'incorrect handle'})
+		response = json.dumps({'status': 'failure','details':'incorrect handle'})
 
 	return response
 
 
 @csrf_exempt
 def addCfUser(requests):
+	# pdb.set_trace()
 	if requests.method == 'POST':
 		college = requests.POST.get('college')
 		handle = requests.POST.get('handle')
-		college = getCFCollege(handle,college)
+		college = getCollegeId(college)
+		college = json.loads(college)
+		if college['status'] != 'success':
+			response = HttpResponse(json.dumps({'status': 'failure','details': college['details']}), mimetype="application/json")
+			return response 
+		pk = college['id']
+		college = getCFCollege(handle,college['id'])
 		college1 = json.loads(college)
 		response = []
 		if college1['status'] == 'success':
-			college = requests.POST.get('college')
+			# college = requests.POST.get('college')
 			exists = Codeforces.objects.filter(handle=handle)
 			if not exists:
-				add_user = Codeforces.objects.create(handle=handle,college=College.objects.get(id=college))
+				add_user = Codeforces.objects.create(handle=handle,college=College.objects.get(id=pk))
 				if add_user:
 					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
 				else:
@@ -654,12 +678,12 @@ def getTCCollege(handle,college_id):
 				response = json.dumps({'status': 'success','userid':userid})
 
 			else:
-				response = json.dumps({'status': 'failure','errors':'college did not match'})
+				response = json.dumps({'status': 'failure','details':'college did not match'})
 
 		else:
-			response = json.dumps({'status': 'failure','errors':errors})
+			response = json.dumps({'status': 'failure','details':errors})
 	else:
-		response = json.dumps({'status': 'failure','errors':'incorrect handle'})
+		response = json.dumps({'status': 'failure','details':'incorrect handle'})
 	return response
 
 @csrf_exempt
@@ -667,15 +691,21 @@ def addTCUser(requests):
 	if requests.method == 'POST':
 		college = requests.POST.get('college')
 		handle = requests.POST.get('handle')
-		college = getTCCollege(handle,college)
+		college = getCollegeId(college)
+		college = json.loads(college)
+		if college['status'] != 'success':
+			response = HttpResponse(json.dumps({'status': 'failure','details': college['details']}), mimetype="application/json")
+			return response 
+		pk = college['id']
+		college = getTCCollege(handle,college['id'])
 		college1 = json.loads(college)
 		if college1['status'] == 'success':
-			coderId = college1('userid')
-			college = requests.POST.get('college')
+			coderId = college1['userid']
+			# college = requests.POST.get('college')
 			response = []
 			exists = Topcoder.objects.filter(handle=handle)
 			if not exists:
-				add_user = Topcoder.objects.create(handle=handle,college=College.objects.get(id=college),coderId=coderId)
+				add_user = Topcoder.objects.create(handle=handle,college=College.objects.get(id=pk),coderId=coderId)
 				if add_user:
 					response = HttpResponse(json.dumps({'status': 'success','handle': handle, 'college':college}), mimetype="application/json")
 				else:
@@ -966,27 +996,34 @@ def getCCCollege(handle,college_id):
 				response = json.dumps({'status': 'success','name':name})
 
 			else:
-				response = json.dumps({'status': 'failure','errors':'college did not match'})
+				response = json.dumps({'status': 'failure','details':'college did not match'})
 
 		else:
-			response = json.dumps({'status': 'failure','errors':errors})
+			response = json.dumps({'status': 'failure','details':errors})
 
 	return response
 
+@csrf_exempt
 def addCCUser(requests):
-	# pdb.set_trace()
+	pdb.set_trace()
 	if requests.method == 'POST':
 		handle = requests.POST.get('handle')
 		college = requests.POST.get('college')
-		college = getCCCollege(handle,college)
+		college = getCollegeId(college)
+		college = json.loads(college)
+		if college['status'] != 'success':
+			response = HttpResponse(json.dumps({'status': 'failure','details': college['details']}), mimetype="application/json")
+			return response 
+		pk = college['id']
+		college = getCCCollege(handle,college['id'])
 		college1 = json.loads(college)
 		if college1['status'] == 'success':
 			name = college1['name']
-			college = requests.POST.get('college')
+			# college = requests.POST.get('college')
 			response = []
 			exists = Codechef.objects.filter(handle=handle)
 			if not exists:
-				add_user = Codechef.objects.create(handle=handle,college=College.objects.get(id=college),name=name)
+				add_user = Codechef.objects.create(handle=handle,college=College.objects.get(id=pk),name=name)
 				if add_user:
 					cc = url + "updateCCRank/" + handle + "/"		
 					page = urllib2.urlopen(cc).read()
@@ -1511,3 +1548,95 @@ def createProblemTableCF(request):
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure', 'error': errors}), mimetype="application/json")
 	return response
+
+@csrf_exempt
+def getProblemTags(requests):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		errors = []
+		data = []
+		db_name="problems"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		cursor.execute("SHOW TABLES FROM problems")
+		rows = cursor.fetchall()
+		if rows:
+			for row in rows:
+				data.append(row[0])
+		else:
+			errors.append('Error Fetching Data.')
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
+
+@csrf_exempt
+def getProblems(requests,tag):
+	# pdb.set_trace()
+	if requests.method == 'POST':
+		response = []
+		errors = []
+		data = []
+		db_name="problems"
+		db = getDBObject(db_name)
+		cursor = db.cursor()
+		flag = 0
+		# print college[0].id
+		tag = tag.lower()
+		if tag != 'allproblems':
+			try:
+				cursor.execute("SELECT * FROM "+str(tag))
+				rows = cursor.fetchall()
+				if rows:
+					for row in rows:
+						Id = row[0]
+						cursor.execute("SELECT * FROM AllProblems WHERE ID="+Id)
+						problem = cursor.fetchall()
+						if problem:
+							for p in problem:
+								data.append({'name' : p[1],'url':p[2],'tags' : p[3]})
+				else:
+					errors.append('Error Fetching Data.')
+			except MySQLdb.Error, e:
+				errors.append(str(e))
+		else:
+			try:
+				cursor.execute("SELECT * FROM AllProblems")
+				problem = cursor.fetchall()
+				if problem:
+					for p in problem:
+						data.append({'name' : p[1],'url':p[2],'tags' : p[3]})
+				else:
+					errors.append('Error Fetching Data.')
+			except MySQLdb.Error, e:
+				errors.append(str(e))
+
+		if not errors:
+			response = HttpResponse(json.dumps({'status': 'success','details': data}), mimetype="application/json")
+		else:
+			response = HttpResponse(json.dumps({'status': 'failure','errors': errors}), mimetype="application/json")
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response
+
+
+@csrf_exempt
+def sendMessage(request):
+	# pdb.set_trace()
+	if request.method == 'POST':
+		try:
+			add_user = contactUs.objects.create(Name=request.POST.get('name'),Phone=request.POST.get('phone'),Email=request.POST.get('email'),Message=request.POST.get('message'))
+			if add_user:
+				response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+			else:
+				response = HttpResponse(json.dumps({'status': 'failure'}), mimetype="application/json")
+		except:
+			response = HttpResponse(json.dumps({'status': 'failure'}), mimetype="application/json")
+
+	else:
+		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
+	return response		

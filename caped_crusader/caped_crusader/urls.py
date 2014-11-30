@@ -41,5 +41,8 @@ urlpatterns = patterns('caped_crusader.views',
     url(r'^cfTable/(?P<contest>\w+)', 'cfTable'),
     url(r'^correctCCCollegeId/', 'correctCCCollegeId'),
     url(r'^createProblemTableCF', 'createProblemTableCF'),
+    url(r'^getProblemTags/', 'getProblemTags'),
+    url(r'^sendMessage/', 'sendMessage'),
+    url(r'^getProblems/(?P<tag>\w+)', 'getProblems'),
 )
 
