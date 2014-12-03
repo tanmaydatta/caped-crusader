@@ -15,7 +15,6 @@ import pprint
 import random
 import requests
 import time
-import numpy as np
 from bs4 import BeautifulSoup as bs
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
@@ -69,14 +68,14 @@ def getDBObject(db_name):
 #test function
 @csrf_exempt
 def setId(requests):
-	pdb.set_trace()
+	#pdb.set_trace()
 	x = requests.GET['1']
 	requests.session['id'] = x
 	return HttpResponse(json.dumps({'sessid': x}), mimetype="application/json")
 
 @csrf_exempt
 def checkCollege(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	errors = []
 	try:
 		if requests.POST.get('college'):
@@ -101,7 +100,7 @@ def checkCollege(requests):
 #test function
 @csrf_exempt
 def hello(requests):
-	pdb.set_trace()
+	#pdb.set_trace()
 	abc = Codeforces.objects.get(pk>=0)
 	# try:
 	# 	y = requests.session['id']
@@ -124,7 +123,7 @@ def getCollegeId(college):
 	return response
 
 def getCFCollege(handle,college_id):
-	pdb.set_trace()
+	#pdb.set_trace()
 	cc = "http://codeforces.com/api/user.info?handles="+str(handle)
 	# print cc
 	page=""
@@ -188,7 +187,7 @@ def getCFCollege(handle,college_id):
 
 @csrf_exempt
 def addCfUser(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		college = requests.POST.get('college')
 		handle = requests.POST.get('handle')
@@ -224,7 +223,7 @@ def addCfUser(requests):
 
 @csrf_exempt
 def getallColleges(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		response = []
 		allCollege = College.objects.all()
@@ -237,13 +236,14 @@ def getallColleges(requests):
 
 @csrf_exempt
 def getCurrentContests(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	# print requests
 	if requests.method == 'POST':
 		response = []
 		names = []
 		codes = []
 		endTimes = []
+		platforms = []
 		cc = "http://www.codechef.com/contests/"
 		page = urllib2.urlopen(cc).read()
 		page = bs(page)
@@ -266,12 +266,13 @@ def getCurrentContests(requests):
 					codes.append(tds[0].text)
 					names.append(tds[1].text)
 					endTimes.append(tds[3].text)
+					platforms.append("CODECHEF")
 
 		errors = [] 
 		db_name="okrdx"
 		db = getDBObject(db_name)
 		global url
-		# pdb.set_trace()
+		# #pdb.set_trace()
 		if len(codes) > 0:
 			for code in codes:
 				try:
@@ -288,8 +289,27 @@ def getCurrentContests(requests):
 					page = urllib2.urlopen(cc)
 					cc = url + "updateCCRank/" + code + "/1"
 					page = urllib2.urlopen(cc)
+		flag = 0
+		# pdb.set_trace()
+		try:
+			cc = "http://codeforces.com/api/contest.list"
+			page =  urllib2.urlopen(cc).read()
+			page=json.loads(page)
+			result = page['result']
+			for contest in result:
+				if contest['phase'] != "FINISHED":
+					if contest['phase'] == "CODING":
+						flag = flag + 1
+						endTimes.append(str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(contest['startTimeSeconds']+contest['durationSeconds']+19800))))
+						names.append(contest['name'])
+						codes.append(str(contest['id']))
+						platforms.append("CODEFORCES")
+				else:
+					break;
+		except:
+			flag = 0
 
-		response = HttpResponse(json.dumps({'status': 'success','codes': codes, 'names': names, 'END': endTimes}), mimetype="application/json")
+		response = HttpResponse(json.dumps({'status': 'success','platforms':platforms,'codes': codes, 'names': names, 'END': endTimes}), mimetype="application/json")
 	else:
 		response = HttpResponse(json.dumps({'status': 'failure','details': 'post request not received'}), mimetype="application/json")
 	return response
@@ -297,7 +317,7 @@ def getCurrentContests(requests):
 
 @csrf_exempt
 def updateCFUserlist(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		json_data = open("/var/www/html/caped-crusader/caped_crusader/caped_crusader/user-ratedList.json")
 		data = json.load(json_data)
@@ -318,7 +338,7 @@ def updateCFUserlist(requests):
 
 @csrf_exempt
 def getCCContestRank(requests,contest):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		response = []
 		errors = []
@@ -356,7 +376,7 @@ def getCCContestRank(requests,contest):
 
 @csrf_exempt
 def ccContestRanks(requests,contest):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		response = []
 		errors = []
@@ -423,7 +443,7 @@ def ccContestRanks(requests,contest):
 
 @csrf_exempt
 def getCCContests(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		response = []
 		errors = []
@@ -448,7 +468,7 @@ def getCCContests(requests):
 	return response
 
 def correctCCCollegeId(requests):
-	pdb.set_trace()
+	#pdb.set_trace()
 	response = []
 	errors = []
 	data = []
@@ -536,7 +556,7 @@ def setCodechefDb(requests):
 
 @csrf_exempt
 def addCollege(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	try:
 		if requests.method == 'GET':
 			college = requests.GET.get('college')
@@ -604,7 +624,7 @@ def addCollege(requests):
 
 @csrf_exempt
 def updateTCUserlist(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		json_data = open("/var/www/html/caped-crusader/caped_crusader/caped_crusader/topcoder.json")
 		data = json.load(json_data)
@@ -723,7 +743,7 @@ def addTCUser(requests):
 
 
 def get_cc_rank(request,contest,get_handle):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	cc = "http://www.codechef.com/rankings/"+contest
 	page = requests.get(cc)
 
@@ -752,7 +772,7 @@ def get_cc_rank(request,contest,get_handle):
 
 
 def ccTable(request,contest):
-	pdb.set_trace()
+	#pdb.set_trace()
 	# print request
 	db_name="okrdx"
 	db = getDBObject(db_name)
@@ -776,7 +796,7 @@ def ccTable(request,contest):
 
 
 def fillCCTable(request,contest):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	allUsers = Codechef.objects.all()
 	db_name="okrdx"
 	db = getDBObject(db_name)
@@ -881,7 +901,7 @@ def collegeTags():
 	return response
 
 def syncCCCollege(request):
-	pdb.set_trace()
+	#pdb.set_trace()
 	allObjects = Codechef.objects.all()
 	db_name="okrdx"
 	db = getDBObject(db_name)
@@ -942,7 +962,7 @@ def syncCCCollege(request):
 
 
 def getCCCollege(handle,college_id):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	cc = "http://www.codechef.com/users/"+str(handle)
 	# print cc
 	page = requests.get(cc)
@@ -1005,7 +1025,7 @@ def getCCCollege(handle,college_id):
 
 @csrf_exempt
 def addCCUser(requests):
-	pdb.set_trace()
+	#pdb.set_trace()
 	if requests.method == 'POST':
 		handle = requests.POST.get('handle')
 		college = requests.POST.get('college')
@@ -1046,7 +1066,7 @@ def addCCUser(requests):
 	return response
 
 def updateCCNames(request):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	try:
 		i = 0
 		allObjects = Codechef.objects.all()
@@ -1072,7 +1092,7 @@ def updateCCNames(request):
 	return response
 
 def SyncTCColleges(request):
-	pdb.set_trace()
+	#pdb.set_trace()
 	db_name="okrdx"
 	db = getDBObject(db_name)
 	cursor = db.cursor()
@@ -1129,7 +1149,7 @@ def SyncTCColleges(request):
 
 
 def updateSyncCFNames(request):
-	pdb.set_trace()
+	#pdb.set_trace()
 	db_name="okrdx"
 	db = getDBObject(db_name)
 	cursor = db.cursor()
@@ -1190,7 +1210,7 @@ def updateSyncCFNames(request):
 
 
 def updateCCRank(request,handle):
-	pdb.set_trace()
+	#pdb.set_trace()
 	i = 0
 	users = Codechef.objects.all()
 	last = users[len(users)-1].id
@@ -1205,7 +1225,7 @@ def updateCCRank(request,handle):
 					condition = user.handle == handle
 					i=10000
 				if condition:
-					# pdb.set_trace()
+					# #pdb.set_trace()
 					# print user.handle
 					try:
 						cc = "http://www.codechef.com/users/"+str(user.handle)
@@ -1309,7 +1329,7 @@ def cfTable(request,contest):
 
 
 def fillCFTable(request,contest):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	allUsers = Codeforces.objects.all()
 	db_name="codeforces"
 	db = getDBObject(db_name)
@@ -1334,7 +1354,7 @@ def fillCFTable(request,contest):
 	return response
 
 def updateCFcontestRank(request,contest,run):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	try:
 		global t 
 		t = int (0)
@@ -1396,23 +1416,30 @@ def updateCFRank(request):
 	try:
 		errors = []
 		users = Codeforces.objects.all()
+		i = 0
 		try:
 			for user in users:
-				if user.id  > 690:
-					# pdb.set_trace()
-					print user.handle
-					cc = "http://codeforces.com/api/user.info?handles="+str(user.handle)
-					page = urllib2.urlopen(cc).read()
-					page = json.loads(page)
-					rank = page['result'][0]['rank']
-					rating = page['result'][0]['rating']
-					user.rank = rank
-					user.rating = rating
-					user.save()
-					print user.id
-					# break
+				try:
+					if  1:
+						# #pdb.set_trace()
+						print user.handle
+						cc = "http://codeforces.com/api/user.info?handles="+str(user.handle)
+						page = urllib2.urlopen(cc).read()
+						page = json.loads(page)
+						user.orating = user.rating
+						user.orank = user.rank
+						rank = page['result'][0]['rank']
+						rating = page['result'][0]['rating']
+						user.rank = rank
+						user.rating = rating
+						user.save()
+						print i
+						i = i+1
+						# break
+				except:
+					errors.append(user.id)
 		except:
-			errors.append("error in updating data "+user.id)
+			errors.append("error in updating data ")
 
 		if not errors:
 			response = HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
@@ -1428,14 +1455,14 @@ def updateCFRank(request):
 
 
 def updateTCRank(request):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	try:
 		errors = []
 		users = Topcoder.objects.all()
 		try:
 			for user in users:
 				if user.id  == 2221:
-					# pdb.set_trace()
+					# #pdb.set_trace()
 					print user.handle
 					cc = "http://community.topcoder.com/tc?module=BasicData&c=dd_rating_history&cr="+str(user.coderId)
 					page = urllib2.urlopen(cc).read()
@@ -1468,7 +1495,7 @@ def updateTCRank(request):
 	return response
 
 def createProblemTableCF(request):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	errors=[]
 	db_name="problems"
 	db = getDBObject(db_name)
@@ -1485,7 +1512,7 @@ def createProblemTableCF(request):
 			tags = problem['tags']
 			for tag in tags:
 				tagList.append(str(tag))
-		# pdb.set_trace()
+		# #pdb.set_trace()
 		db.commit()
 		uniqueTags = set(tagList)
 		tags=[]
@@ -1500,7 +1527,7 @@ def createProblemTableCF(request):
 			except MySQLdb.Error, e:
 				errors.append(str(e))
 			tags.append(uniqueTag)
-		# pdb.set_trace()
+		# #pdb.set_trace()
 		i = 0
 		for problem in page:
 			tags = problem['tags']
@@ -1522,7 +1549,7 @@ def createProblemTableCF(request):
 						try:
 							# tags = problem['tags']
 							for tag in tags:
-								# pdb.set_trace()
+								# #pdb.set_trace()
 								tag = tag.replace(" ","_")
 								tag = tag.replace("-","_")
 								sql = "INSERT INTO "+ tag +" (ID ) VALUES (%s)" 
@@ -1537,7 +1564,7 @@ def createProblemTableCF(request):
 				except:
 					continue
 		print i
-		# pdb.set_trace()
+		# #pdb.set_trace()
 		db.commit()
 		db.close()
 
@@ -1551,7 +1578,7 @@ def createProblemTableCF(request):
 
 @csrf_exempt
 def getProblemTags(requests):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		response = []
 		errors = []
@@ -1576,7 +1603,7 @@ def getProblemTags(requests):
 
 @csrf_exempt
 def getProblems(requests,tag):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if requests.method == 'POST':
 		response = []
 		errors = []
@@ -1626,7 +1653,7 @@ def getProblems(requests,tag):
 
 @csrf_exempt
 def sendMessage(request):
-	# pdb.set_trace()
+	# #pdb.set_trace()
 	if request.method == 'POST':
 		try:
 			add_user = contactUs.objects.create(Name=request.POST.get('name'),Phone=request.POST.get('phone'),Email=request.POST.get('email'),Message=request.POST.get('message'))
